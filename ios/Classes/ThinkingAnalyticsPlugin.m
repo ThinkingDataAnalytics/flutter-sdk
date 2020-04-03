@@ -126,6 +126,10 @@
               [[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] enableAutoTrack:iOSAutoTrackType];
         }
         result(nil);
+    } else if ([@"calibrateTime" isEqualToString:call.method]) {
+        [ThinkingAnalyticsSDK calibrateTime:[[arguments objectForKey:@"timestamp"] doubleValue]];
+    } else if ([@"calibrateTimeWithNtp" isEqualToString:call.method]) {
+        [ThinkingAnalyticsSDK calibrateTimeWithNtp:[arguments objectForKey:@"ntpServer"]];
     } else {
         result(FlutterMethodNotImplemented);
     }

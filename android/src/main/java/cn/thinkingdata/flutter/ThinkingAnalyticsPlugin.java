@@ -59,8 +59,26 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
         if (TextUtils.isEmpty(appId)) {
             if (call.method.equals("enableLog")) {
                 ThinkingAnalyticsSDK.enableTrackLog(true);
+                result.success(null);
                 return;
             }
+
+            if (call.method.equals("calibrateTime")) {
+                Long timestamp = call.argument("timestamp");
+                if (null != timestamp) {
+                    ThinkingAnalyticsSDK.calibrateTime(timestamp);
+                }
+                result.success(null);
+                return;
+            }
+
+            if (call.method.equals("calibrateTimeWithNtp")) {
+                String ntpServer = call.argument("ntpServer");
+                ThinkingAnalyticsSDK.calibrateTimeWithNtp(ntpServer);
+                result.success(null);
+                return;
+            }
+
             TDLog.w(TAG, "appId is required for ThinkingAnalyticsPlugin");
             result.error(TAG, "appId is required for ThinkingAnalyticsPlugin", "");
             return;

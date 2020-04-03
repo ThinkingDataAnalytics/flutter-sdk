@@ -1,11 +1,11 @@
 PODS:
   - Flutter (1.0.0)
-  - thinking_analytics (1.0.0):
+  - thinking_analytics (1.1.0):
     - Flutter
-    - ThinkingSDK
-  - ThinkingSDK (2.4.2):
-    - ThinkingSDK/Core (= 2.4.2)
-  - ThinkingSDK/Core (2.4.2)
+    - ThinkingSDK (= 2.5.0)
+  - ThinkingSDK (2.5.0):
+    - ThinkingSDK/Core (= 2.5.0)
+  - ThinkingSDK/Core (2.5.0)
 
 DEPENDENCIES:
   - Flutter (from `Flutter`)
@@ -23,8 +23,8 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   Flutter: 0e3d915762c693b495b44d77113d4970485de6ec
-  thinking_analytics: 9b481acbe958f8ac8aa46311d1c80d50c9f1d8a6
-  ThinkingSDK: d76a56964c484453ba72a5530ca0001268734a67
+  thinking_analytics: 8cd16ca9464164cdd486bf96fce557643c928466
+  ThinkingSDK: 38397ab0fd64d64cfe3768db0cc23f437bb839e0
 
 PODFILE CHECKSUM: 3dbe063e9c90a5d7c9e4e76e70a821b9e2c1d271
 

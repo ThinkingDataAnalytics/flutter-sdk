@@ -87,6 +87,19 @@ class ThinkingAnalyticsAPI {
     _channel.invokeMethod('enableLog');
   }
 
+  /// Calibrate SDK time with current Unix timestamp
+  static void calibrateTime(int timestamp) {
+    _channel.invokeMethod('calibrateTime', <String, dynamic>{'timestamp': timestamp});
+  }
+
+  /// Calibrate SDK time with a given NTP server.
+  ///
+  /// SDK will try to get calibrated time from the NTP server with a default timeout 3 seconds.
+  /// If failed, device time will be used for tracking data.
+  static void calibrateTimeWithNtp(String ntpServer) {
+    _channel.invokeMethod('calibrateTimeWithNtp', <String, dynamic>{'ntpServer': ntpServer});
+  }
+
   /// Enable auto track events.
   ///
   /// You can enable auto tracking by calling the method with [autoTrackTypes], which is a List of [ThinkingAnalyticsAutoTrackType].
