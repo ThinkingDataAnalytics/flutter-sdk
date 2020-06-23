@@ -1,3 +1,7 @@
+## 1.2.0
+* 优化 Debug 模式，配合后台埋点管理
+* 支持 #system_language 属性
+
 ## 1.1.1
 * 修复 Android 平台 DEBUG 模式事件上报 BUG
 
