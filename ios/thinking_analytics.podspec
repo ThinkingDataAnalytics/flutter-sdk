@@ -17,7 +17,7 @@ Official Thinking Analytics Flutter plugin. Used to tracking events and user dat
   s.source_files = 'Classes/**/*'
   s.public_header_files = 'Classes/**/*.h'
   s.dependency 'Flutter'
-  s.dependency 'ThinkingSDK', "2.5.5"
+  s.dependency 'ThinkingSDK', '2.6.1'
   s.platform = :ios, '8.0'
 
   # Flutter.framework does not contain a i386 slice. Only x86_64 simulators are supported.
