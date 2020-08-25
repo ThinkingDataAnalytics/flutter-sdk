@@ -10,11 +10,11 @@
 @implementation ThinkingAnalyticsPlugin
 
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
-  FlutterMethodChannel* channel = [FlutterMethodChannel
-      methodChannelWithName:@"thinkingdata.cn/ThinkingAnalytics"
-            binaryMessenger:[registrar messenger]];
-  ThinkingAnalyticsPlugin* instance = [[ThinkingAnalyticsPlugin alloc] init];
-  [registrar addMethodCallDelegate:instance channel:channel];
+    FlutterMethodChannel* channel = [FlutterMethodChannel
+                                     methodChannelWithName:@"thinkingdata.cn/ThinkingAnalytics"
+                                     binaryMessenger:[registrar messenger]];
+    ThinkingAnalyticsPlugin* instance = [[ThinkingAnalyticsPlugin alloc] init];
+    [registrar addMethodCallDelegate:instance channel:channel];
 }
 
 - (void)handleMethodCall:(FlutterMethodCall*)call result:(FlutterResult)result {
@@ -30,10 +30,42 @@
         } else if ([[arguments objectForKey:@"mode"] intValue] == 2) {
             config.debugMode = ThinkingAnalyticsDebugOnly;
         }
-        [ThinkingAnalyticsSDK startWithAppId:[arguments objectForKey:@"appId"] withUrl:[arguments objectForKey:@"serverUrl"] withConfig:config];
+        NSString *appId = [arguments objectForKey:@"appId"];
+        NSString *serverUrl = [arguments objectForKey:@"serverUrl"];
+        [ThinkingAnalyticsSDK startWithAppId:appId
+                                     withUrl:serverUrl
+                                  withConfig:config];
+        
+        [ThinkingAnalyticsSDK setCustomerLibInfoWithLibName:@"Flutter" libVersion:@"1.2.1"];
+        
         result(nil);
     } else if ([@"track" isEqualToString:call.method]) {
         [self track:arguments];
+        result(nil);
+    } else if ([@"trackEventModel" isEqualToString:call.method]) {
+        TDEventModel *eventModel;
+        NSString *extraID;
+        if ([[arguments objectForKey:@"extraID"] isKindOfClass:[NSString class]]) {
+            extraID = [arguments objectForKey:@"extraID"];
+        }
+        NSString *eventName = [arguments objectForKey:@"eventName"];
+        NSString *type = [arguments objectForKey:@"eventType"];
+        
+        if ([type isEqualToString:TD_EVENT_TYPE_TRACK_FIRST]) {
+            eventModel = [[TDFirstEventModel alloc] initWithEventName:eventName firstCheckID:extraID];
+        } else if ([type isEqualToString:TD_EVENT_TYPE_TRACK_UPDATE]) {
+            eventModel = [[TDUpdateEventModel alloc] initWithEventName:eventName eventID:extraID];
+        } else if ([type isEqualToString:TD_EVENT_TYPE_TRACK_OVERWRITE]) {
+            eventModel = [[TDOverwriteEventModel alloc] initWithEventName:eventName eventID:extraID];
+        }
+        
+        eventModel.properties = [arguments objectForKey:@"properties"];
+        if ([arguments objectForKey:@"timestamp"]) {
+            NSDate *time = [NSDate dateWithTimeIntervalSince1970:[[arguments objectForKey:@"timestamp"] doubleValue]/1000.];
+            NSTimeZone *timeZone = [NSTimeZone timeZoneWithName:[arguments objectForKey:@"timeZone"]];
+            [eventModel configTime:time timeZone:timeZone];
+        }
+        [[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] trackWithEventModel:eventModel];
         result(nil);
     } else if ([@"identify" isEqualToString:call.method]) {
         [[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] identify:[arguments objectForKey:@"distinctId"]];
@@ -109,21 +141,21 @@
         result(nil);
     } else if ([@"enableAutoTrack" isEqualToString:call.method]) {
         if ([arguments objectForKey:@"types"]) {
-              NSArray *autoTrackTypes = [arguments objectForKey:@"types"];
-              ThinkingAnalyticsAutoTrackEventType iOSAutoTrackType = ThinkingAnalyticsEventTypeNone;
-              for(int i=0; i < autoTrackTypes.count; i++) {
-                  NSNumber* value = autoTrackTypes[i];
-                  if (value.intValue == 0) {
-                      iOSAutoTrackType |= ThinkingAnalyticsEventTypeAppStart;
-                  } else if (value.intValue == 1) {
-                       iOSAutoTrackType |= ThinkingAnalyticsEventTypeAppEnd;
-                  } else if (value.intValue == 2) {
-                      iOSAutoTrackType |= ThinkingAnalyticsEventTypeAppInstall;
-                  } else if (value.intValue == 3) {
-                      iOSAutoTrackType |= ThinkingAnalyticsEventTypeAppViewCrash;
-                  }
-              }
-              [[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] enableAutoTrack:iOSAutoTrackType];
+            NSArray *autoTrackTypes = [arguments objectForKey:@"types"];
+            ThinkingAnalyticsAutoTrackEventType iOSAutoTrackType = ThinkingAnalyticsEventTypeNone;
+            for(int i=0; i < autoTrackTypes.count; i++) {
+                NSNumber* value = autoTrackTypes[i];
+                if (value.intValue == 0) {
+                    iOSAutoTrackType |= ThinkingAnalyticsEventTypeAppStart;
+                } else if (value.intValue == 1) {
+                    iOSAutoTrackType |= ThinkingAnalyticsEventTypeAppEnd;
+                } else if (value.intValue == 2) {
+                    iOSAutoTrackType |= ThinkingAnalyticsEventTypeAppInstall;
+                } else if (value.intValue == 3) {
+                    iOSAutoTrackType |= ThinkingAnalyticsEventTypeAppViewCrash;
+                }
+            }
+            [[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] enableAutoTrack:iOSAutoTrackType];
         }
         result(nil);
     } else if ([@"calibrateTime" isEqualToString:call.method]) {

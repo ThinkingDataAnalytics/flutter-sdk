@@ -29,6 +29,53 @@ enum ThinkingAnalyticsAutoTrackType {
   APP_CRASH
 }
 
+enum ThinkingAnalyticsTrackEventType {
+
+  TRACK_FIRST,
+
+  TRACK_UPDATE,
+
+  TRACK_OVERWRITE
+}
+
+abstract class TrackEventModel {
+  String eventName;
+  ThinkingAnalyticsTrackEventType eventType;
+  String extraID;
+  
+  Map<String, dynamic> properties;
+  
+  DateTime dateTime;
+  String timeZone;
+}
+ 
+class TrackFirstEventModel extends TrackEventModel {
+  TrackFirstEventModel(String eventName, String firstCheckID, Map properties) {
+    this.eventName = eventName;
+    this.properties = properties;
+    this.eventType = ThinkingAnalyticsTrackEventType.TRACK_FIRST;
+    this.extraID = firstCheckID;
+  }
+}
+
+class TrackUpdateEventModel extends TrackEventModel {
+  TrackUpdateEventModel(String eventName, String eventID, Map properties) {
+    this.eventName = eventName;
+    this.properties = properties;
+    this.eventType = ThinkingAnalyticsTrackEventType.TRACK_UPDATE;
+    this.extraID = eventID;
+  }
+}
+
+class TrackOverwriteEventModel extends TrackEventModel {
+  TrackOverwriteEventModel(String eventName, String eventID, Map properties) {
+    this.eventName = eventName;
+    this.properties = properties;
+    this.eventType = ThinkingAnalyticsTrackEventType.TRACK_OVERWRITE;
+    this.extraID = eventID;
+  }
+}
+
 /// Official Thinking Analytics API for tracking events and user properties.
 ///
 /// Your should get the instance of ThinkingAnalyticsAPI by calling `getInstance` with your APP ID of Thinking Analytics project and URL of receiver:
@@ -155,6 +202,51 @@ class ThinkingAnalyticsAPI {
     }
 
     _channel.invokeMethod<void>('track', params);
+  }
+
+  /// 特殊事件上报
+  /// 首次事件: 带有#first_check_id字段, 值为参数extraID, 事件类型为track, #first_check_id默认为设备id.
+  /// 
+  /// 事件更新/重写: 事件类型为track_update / track_overwrite, 根据#event_name、#event_id匹配需要更新/重写的数据
+  /// #event_id 值为extraID.
+  void trackEventModel(TrackEventModel eventModel) {
+    Map<String, dynamic> finalProperties = this._getDynamicSuperProperties == null ? {} : this._getDynamicSuperProperties();
+
+    if (eventModel.properties != null) {
+      finalProperties.addAll(eventModel.properties);
+    }
+
+    _searchDate(finalProperties);
+
+    Map<String, dynamic> params = {
+      'appId': this._appId,
+      'eventName': eventModel.eventName,
+      'properties': finalProperties,
+      'extraID': eventModel.extraID
+    };
+
+    switch (eventModel.eventType) {
+      case ThinkingAnalyticsTrackEventType.TRACK_FIRST:
+        params['eventType'] = 'track_first';
+        break;
+      case ThinkingAnalyticsTrackEventType.TRACK_UPDATE:
+        params['eventType'] = 'track_update';
+        break;
+      case ThinkingAnalyticsTrackEventType.TRACK_OVERWRITE:
+        params['eventType'] = 'track_overwrite';
+        break;
+      default:
+    }
+
+    if (null != eventModel.dateTime) {
+      params['timestamp'] = eventModel.dateTime.millisecondsSinceEpoch;
+    }
+
+    if (null != eventModel.timeZone) {
+      params['timeZone'] = eventModel.timeZone;
+    }
+
+    _channel.invokeMethod<void>('trackEventModel', params);
   }
 
   /// Sets user properties.

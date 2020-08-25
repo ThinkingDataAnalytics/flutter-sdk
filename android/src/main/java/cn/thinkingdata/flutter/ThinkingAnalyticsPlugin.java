@@ -18,6 +18,9 @@ import java.util.TimeZone;
 import cn.thinkingdata.android.TDConfig;
 import cn.thinkingdata.android.ThinkingAnalyticsSDK;
 import cn.thinkingdata.android.utils.TDLog;
+import cn.thinkingdata.android.TDFirstEvent;
+import cn.thinkingdata.android.TDUpdatableEvent;
+import cn.thinkingdata.android.TDOverWritableEvent;
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.common.MethodCall;
@@ -103,6 +106,9 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
                 break;
             case "track":
                 track(call, result, appId);
+                break;
+            case "trackEventModel":
+                trackEventModel(call, result, appId);
                 break;
             case "timeEvent":
                 timeEvent(call, result, appId);
@@ -207,6 +213,7 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
         }
 
         ThinkingAnalyticsSDK instance = ThinkingAnalyticsSDK.sharedInstance(config);
+        ThinkingAnalyticsSDK.setCustomerLibInfo("Flutter", "1.2.1");
         result.success(instance.hashCode());
     }
 
@@ -259,6 +266,56 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
                 }
             } else {
                 getThinkingAnalyticsSDK(appId).track(eventName, properties);
+            }
+        } catch (Exception e) {
+            TDLog.e(TAG, e.toString());
+            result.error(e.getClass().getName(), e.toString(), "");
+            return;
+        }
+
+        result.success(null);
+    }
+
+    private void trackEventModel(MethodCall call, Result result, String appId) {
+        try {
+            String eventName = call.argument("eventName");
+            String extraID = call.argument("extraID");
+            Date date = call.hasArgument("timestamp") ? new Date((long) call.argument("timestamp")) : null;
+            TimeZone timeZone = call.hasArgument("timeZone") ? TimeZone.getTimeZone((String) call.argument("timeZone")) : null;
+
+            Map<String, Object> mapProperties = call.<HashMap<String, Object>>argument("properties");
+            JSONObject properties = extractJSONObject(mapProperties == null ? EMPTY_HASH_MAP : mapProperties);
+
+            String type = call.argument("eventType");
+            switch (type) {
+                case "track_first": {
+                    TDFirstEvent eventModel = new TDFirstEvent(eventName, properties);
+                    eventModel.setFirstCheckId(extraID);
+                    if (date != null) {
+                        eventModel.setEventTime(date, timeZone);
+                    }
+                    getThinkingAnalyticsSDK(appId).track(eventModel);
+                    break;
+                }
+                case "track_update": {
+                    TDUpdatableEvent eventModel = new TDUpdatableEvent(eventName, properties, extraID);
+                    if (date != null) {
+                        eventModel.setEventTime(date, timeZone);
+                    }
+                    getThinkingAnalyticsSDK(appId).track(eventModel);
+                    break;
+                }
+                case "track_overwrite": {
+                    TDOverWritableEvent eventModel = new TDOverWritableEvent(eventName, properties, extraID);
+                    if (date != null) {
+                        eventModel.setEventTime(date, timeZone);
+                    }
+                    getThinkingAnalyticsSDK(appId).track(eventModel);
+                    break;
+                }
+                default:
+                    TDLog.e(TAG, "EventType is not available!!");
+                    break;
             }
         } catch (Exception e) {
             TDLog.e(TAG, e.toString());
