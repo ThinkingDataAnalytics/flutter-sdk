@@ -39,18 +39,18 @@ enum ThinkingAnalyticsTrackEventType {
 }
 
 abstract class TrackEventModel {
-  String eventName;
-  ThinkingAnalyticsTrackEventType eventType;
-  String extraID;
+  String? eventName;
+  ThinkingAnalyticsTrackEventType? eventType;
+  String? extraID;
   
-  Map<String, dynamic> properties;
+  Map<String, dynamic>? properties;
   
-  DateTime dateTime;
-  String timeZone;
+  DateTime? dateTime;
+  String? timeZone;
 }
  
 class TrackFirstEventModel extends TrackEventModel {
-  TrackFirstEventModel(String eventName, String firstCheckID, Map properties) {
+  TrackFirstEventModel(String eventName, String firstCheckID, Map<String, dynamic> properties) {
     this.eventName = eventName;
     this.properties = properties;
     this.eventType = ThinkingAnalyticsTrackEventType.TRACK_FIRST;
@@ -59,7 +59,7 @@ class TrackFirstEventModel extends TrackEventModel {
 }
 
 class TrackUpdateEventModel extends TrackEventModel {
-  TrackUpdateEventModel(String eventName, String eventID, Map properties) {
+  TrackUpdateEventModel(String eventName, String eventID, Map<String, dynamic> properties) {
     this.eventName = eventName;
     this.properties = properties;
     this.eventType = ThinkingAnalyticsTrackEventType.TRACK_UPDATE;
@@ -68,7 +68,7 @@ class TrackUpdateEventModel extends TrackEventModel {
 }
 
 class TrackOverwriteEventModel extends TrackEventModel {
-  TrackOverwriteEventModel(String eventName, String eventID, Map properties) {
+  TrackOverwriteEventModel(String eventName, String eventID, Map<String, dynamic> properties) {
     this.eventName = eventName;
     this.properties = properties;
     this.eventType = ThinkingAnalyticsTrackEventType.TRACK_OVERWRITE;
@@ -98,7 +98,7 @@ class ThinkingAnalyticsAPI {
   final String _appId;
 
   // The function return dynamic properties.
-  Function _getDynamicSuperProperties;
+  Function? _getDynamicSuperProperties;
 
   /// Gets instance of ThinkingAnalyticsAPI.
   ///
@@ -112,7 +112,7 @@ class ThinkingAnalyticsAPI {
   /// NOTE:
   /// 1. DO NOT use [ThinkingAnalyticsMode.DEBUG] or [ThinkingAnalyticsMode.DEBUG_ONLY] in online App.
   /// 2. The DEBUG mode could not be enabled unless you set your device ID in TA server.
-  static Future<ThinkingAnalyticsAPI> getInstance(String appId, String serverUrl, {String timeZone, ThinkingAnalyticsMode mode}) async {
+  static Future<ThinkingAnalyticsAPI> getInstance(String appId, String serverUrl, {String? timeZone, ThinkingAnalyticsMode? mode}) async {
 
     Map<String, dynamic> config = <String, dynamic>{'appId': appId, 'serverUrl': serverUrl};
 
@@ -168,9 +168,9 @@ class ThinkingAnalyticsAPI {
   /// Light instance shares most configuration like APP ID and Server URL with the master instance. But the user IDs of light
   /// instance are different with its master instance.
   Future<ThinkingAnalyticsAPI> createLightInstance() async {
-    String lightAppId = await _channel.invokeMethod<String>('createLightInstance', <String, dynamic> {'appId': this._appId});
+    String? lightAppId = await _channel.invokeMethod<String>('createLightInstance', <String, dynamic> {'appId': this._appId});
 
-    return ThinkingAnalyticsAPI.private(lightAppId);
+    return ThinkingAnalyticsAPI.private(lightAppId!);
   }
 
   /// Tracks an event.
@@ -179,8 +179,11 @@ class ThinkingAnalyticsAPI {
   ///
   /// By default, the event time will be set to the device time with default time zone settings. You can pass a [dateTime] and
   /// a valid [timeZone] name to set the event time.
-  void track(String eventName, {Map<String, dynamic> properties, DateTime dateTime, String timeZone}) {
-    Map<String, dynamic> finalProperties = this._getDynamicSuperProperties == null ? {} : this._getDynamicSuperProperties();
+  void track(String eventName, {Map<String, dynamic>? properties, DateTime? dateTime, String? timeZone}) {
+    Map<String, dynamic> finalProperties = new Map<String, dynamic>();
+    if (this._getDynamicSuperProperties != null) {
+      finalProperties = this._getDynamicSuperProperties!();
+    }
 
     if (properties != null) {
       finalProperties.addAll(properties);
@@ -210,10 +213,13 @@ class ThinkingAnalyticsAPI {
   /// 事件更新/重写: 事件类型为track_update / track_overwrite, 根据#event_name、#event_id匹配需要更新/重写的数据
   /// #event_id 值为extraID.
   void trackEventModel(TrackEventModel eventModel) {
-    Map<String, dynamic> finalProperties = this._getDynamicSuperProperties == null ? {} : this._getDynamicSuperProperties();
+    Map<String, dynamic> finalProperties = new Map<String, dynamic>();
+    if (this._getDynamicSuperProperties != null) {
+      finalProperties = this._getDynamicSuperProperties!();
+    }
 
     if (eventModel.properties != null) {
-      finalProperties.addAll(eventModel.properties);
+      finalProperties.addAll(eventModel.properties!);
     }
 
     _searchDate(finalProperties);
@@ -239,7 +245,7 @@ class ThinkingAnalyticsAPI {
     }
 
     if (null != eventModel.dateTime) {
-      params['timestamp'] = eventModel.dateTime.millisecondsSinceEpoch;
+      params['timestamp'] = eventModel.dateTime!.millisecondsSinceEpoch;
     }
 
     if (null != eventModel.timeZone) {
@@ -355,13 +361,13 @@ class ThinkingAnalyticsAPI {
   }
 
   /// Gets the current distinct ID.
-  Future<String> getDistinctId() async {
+  Future<String?> getDistinctId() async {
     return await _channel.invokeMethod<String>('getDistinctId', <String, dynamic>{'appId': this._appId});
   }
 
   /// Gets the device ID.
-  Future<String> getDeviceId() async {
-    return await _channel.invokeMethod('getDeviceId', <String, dynamic>{'appId': this._appId});
+  Future<String?> getDeviceId() async {
+    return await _channel.invokeMethod<String>('getDeviceId', <String, dynamic>{'appId': this._appId});
   }
 
   /// Stops the SDK function.

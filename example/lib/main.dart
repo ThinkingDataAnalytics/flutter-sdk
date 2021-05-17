@@ -31,9 +31,9 @@ enum INSTANCE_OPERATIONS {
 }
 
 class _MyAppState extends State<MyApp> {
-  ThinkingAnalyticsAPI _ta;
-  ThinkingAnalyticsAPI _ta2;
-  ThinkingAnalyticsAPI _light;
+  late ThinkingAnalyticsAPI _ta;
+  late ThinkingAnalyticsAPI _ta2;
+  late ThinkingAnalyticsAPI _light;
 
   @override
   void initState() {
@@ -148,8 +148,8 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> getSDKInfo(ThinkingAnalyticsAPI instance) async {
-    String distinctId = await instance.getDistinctId();
-    String deviceId = await instance.getDeviceId();
+    String? distinctId = await instance.getDistinctId();
+    String? deviceId = await instance.getDeviceId();
 
     showDialog(
         context: context,
@@ -158,10 +158,10 @@ class _MyAppState extends State<MyApp> {
             title: new Text("SDK Info"),
             children: <Widget>[
               new SimpleDialogOption(
-                child: new Text("Distinct ID: " + distinctId),
+                child: new Text("Distinct ID: " + distinctId!),
               ),
               new SimpleDialogOption(
-                child: new Text("Device ID: " + deviceId),
+                child: new Text("Device ID: " + deviceId!),
               ),
             ],
           );

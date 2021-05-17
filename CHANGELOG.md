@@ -1,3 +1,6 @@
+## 2.0.0
+* 适配 flutter 2.0 null-safety
+
 ## 1.3.2
 * 修复特殊事件不设置timeZone导致上报数据出现错误的#zone_offset的问题.
 * iOS原生SDK版本号修改为v2.6.1, Android原生SDK版本号修改为v2.6.0
