@@ -3,6 +3,7 @@ package cn.thinkingdata.flutter;
 import android.content.Context;
 import androidx.annotation.NonNull;
 import android.text.TextUtils;
+import android.util.Log;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -14,13 +15,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.Iterator;
 
 import cn.thinkingdata.android.TDConfig;
 import cn.thinkingdata.android.ThinkingAnalyticsSDK;
-import cn.thinkingdata.android.utils.TDLog;
 import cn.thinkingdata.android.TDFirstEvent;
 import cn.thinkingdata.android.TDUpdatableEvent;
 import cn.thinkingdata.android.TDOverWritableEvent;
+import cn.thinkingdata.android.encrypt.TDSecreteKey;
+import cn.thinkingdata.android.thirdparty.TDThirdPartyShareType;
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.common.MethodCall;
@@ -34,11 +37,11 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
     private Context mContext;
 
     private static final Map<String, Object> EMPTY_HASH_MAP = new HashMap<>();
-    private static final String TAG = "ThinkingAnalytics.ThinkingAnalyticsPlugin";
+    private static final String TAG = "ThinkingAnalyticsPlugin";
 
     private static final Map<String, ThinkingAnalyticsSDK> mLightInstances = new HashMap<>();
 
-    private enum USER_OPERATIONS {USER_SET, USER_SET_ONCE, USER_ADD, USER_APPEND}
+    private enum USER_OPERATIONS {USER_SET, USER_SET_ONCE, USER_ADD, USER_APPEND, USER_UNIQ_APPEND}
 
     @Override
     public void onAttachedToEngine(@NonNull FlutterPluginBinding flutterPluginBinding) {
@@ -82,7 +85,7 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
                 return;
             }
 
-            TDLog.w(TAG, "appId is required for ThinkingAnalyticsPlugin");
+            Log.w(TAG, "appId is required for ThinkingAnalyticsPlugin");
             result.error(TAG, "appId is required for ThinkingAnalyticsPlugin", "");
             return;
         }
@@ -125,6 +128,9 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
             case "userAppend":
                 userOperation(call, result, appId, USER_OPERATIONS.USER_APPEND);
                 break;
+            case "userUniqAppend":
+                userOperation(call, result, appId, USER_OPERATIONS.USER_UNIQ_APPEND);
+                break;
             case "userUnset":
                 userUnset(call, result, appId);
                 break;
@@ -135,6 +141,9 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
             case "setSuperProperties":
                 setSuperProperties(call, result, appId);
                 break;
+            case "getSuperProperties":
+                getSuperProperties(result, appId);
+                break;
             case "unsetSuperProperty":
                 getThinkingAnalyticsSDK(appId).unsetSuperProperty((String)call.argument("property"));
                 result.success(null);
@@ -142,6 +151,9 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
             case "clearSuperProperties":
                 getThinkingAnalyticsSDK(appId).clearSuperProperties();
                 result.success(null);
+                break;
+            case "getPresetProperties":
+                getPresetProperties(result, appId);
                 break;
             case "getDeviceId":
                 result.success(getThinkingAnalyticsSDK(appId).getDeviceId());
@@ -175,6 +187,15 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
                 break;
             case "enableAutoTrack":
                 enableAutoTrack(call, result, appId);
+                break;
+            case "setAutoTrackProperties":
+                setAutoTrackProperties(call, result, appId);
+                break;
+            case "enableThirdPartySharing":
+                enableThirdPartySharing(call, result, appId);
+                break;
+            case "setTrackStatus":
+                setTrackStatus(call, result, appId);
                 break;
             default:
                 result.notImplemented();
@@ -212,8 +233,36 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
             }
         }
 
+        if(call.hasArgument("lib_version")){
+            String version = call.argument("lib_version");
+            if(null != version){
+                ThinkingAnalyticsSDK.setCustomerLibInfo("Flutter", version);
+            }
+        }
+
+        if (call.hasArgument("enableEncrypt")) {
+            Boolean enableEncrypt = call.argument("enableEncrypt");
+            if (null != enableEncrypt) {
+                config.enableEncrypt(enableEncrypt);
+            }
+        }
+
+        if (call.hasArgument("secretKey")) {
+            Map<String, Object> secretKey = call.argument("secretKey");
+            if (secretKey != null) {
+                TDSecreteKey key = new TDSecreteKey();
+                key.publicKey = (String) secretKey.get("publicKey");
+                Integer v = (Integer) secretKey.get("version");
+                if (null != v) {
+                    key.version = v;
+                }
+                key.symmetricEncryption = (String) secretKey.get("symmetricEncryption");
+                key.asymmetricEncryption = (String) secretKey.get("asymmetricEncryption");
+                config.setSecretKey(key);
+            }
+        }
+
         ThinkingAnalyticsSDK instance = ThinkingAnalyticsSDK.sharedInstance(config);
-        ThinkingAnalyticsSDK.setCustomerLibInfo("Flutter", "1.2.1");
         result.success(instance.hashCode());
     }
 
@@ -248,6 +297,127 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
         result.success(null);
     }
 
+    private void setAutoTrackProperties(MethodCall call, Result result, String appId) {
+        if (call.hasArgument("types") && call.hasArgument("properties")) {
+            Map<String, Object> mapProperties = call.<HashMap<String, Object>>argument("properties");
+            List<Integer> autoTrack = call.argument("types");
+            if (null != autoTrack) {
+                List<ThinkingAnalyticsSDK.AutoTrackEventType> eventTypes = new ArrayList<>();
+                for (int v : autoTrack) {
+                    switch (v) {
+                        case 0:
+                            eventTypes.add(ThinkingAnalyticsSDK.AutoTrackEventType.APP_START);
+                            break;
+                        case 1:
+                            eventTypes.add(ThinkingAnalyticsSDK.AutoTrackEventType.APP_END);
+                            break;
+                        case 2:
+                            eventTypes.add(ThinkingAnalyticsSDK.AutoTrackEventType.APP_INSTALL);
+                            break;
+                        case 3:
+                            eventTypes.add(ThinkingAnalyticsSDK.AutoTrackEventType.APP_CRASH);
+                            break;
+                    }
+                }
+                if (eventTypes.size() > 0) {
+                    JSONObject properties;
+                    try {
+                        properties = extractJSONObject(mapProperties == null ? EMPTY_HASH_MAP : mapProperties);
+                    } catch (Exception e) {
+                        result.error(e.getClass().getName(), e.toString(), "");
+                        return;
+                    }
+                    getThinkingAnalyticsSDK(appId).setAutoTrackProperties(eventTypes, properties);
+                }
+            }
+        }
+
+        result.success(null);
+    }
+
+    private void enableThirdPartySharing(MethodCall call, Result result, String appId) {
+        if (call.hasArgument("types")) {
+            List<Integer> shareTypes = call.argument("types");
+            if (null == shareTypes) return;
+            int thirdTypes = 0;
+            for (int v : shareTypes) {
+                switch (v) {
+                    case 0:
+                        thirdTypes = thirdTypes | TDThirdPartyShareType.TD_APPS_FLYER;
+                        break;
+                    case 1:
+                        thirdTypes = thirdTypes | TDThirdPartyShareType.TD_IRON_SOURCE;
+                        break;
+                    case 2:
+                        thirdTypes = thirdTypes | TDThirdPartyShareType.TD_ADJUST;
+                        break;
+                    case 3:
+                        thirdTypes = thirdTypes | TDThirdPartyShareType.TD_BRANCH;
+                        break;
+                    case 4:
+                        thirdTypes = thirdTypes | TDThirdPartyShareType.TD_TOP_ON;
+                        break;
+                    case 5:
+                        thirdTypes = thirdTypes | TDThirdPartyShareType.TD_TRACKING;
+                        break;
+                    case 6:
+                        thirdTypes = thirdTypes | TDThirdPartyShareType.TD_TRAD_PLUS;
+                        break;
+                }
+
+            }
+            getThinkingAnalyticsSDK(appId).enableThirdPartySharing(thirdTypes);
+        } else if (call.hasArgument("type")) {
+            Integer type = call.argument("type");
+            if (type == null) return;
+            Map<String, Object> maps = call.argument("params");
+            int thirdType = 0;
+            switch (type) {
+                case 0:
+                    thirdType = TDThirdPartyShareType.TD_APPS_FLYER;
+                    break;
+                case 1:
+                    thirdType = TDThirdPartyShareType.TD_IRON_SOURCE;
+                    break;
+                case 2:
+                    thirdType = TDThirdPartyShareType.TD_ADJUST;
+                    break;
+                case 3:
+                    thirdType = TDThirdPartyShareType.TD_BRANCH;
+                    break;
+                case 4:
+                    thirdType = TDThirdPartyShareType.TD_TOP_ON;
+                    break;
+                case 5:
+                    thirdType = TDThirdPartyShareType.TD_TRACKING;
+                    break;
+                case 6:
+                    thirdType = TDThirdPartyShareType.TD_TRAD_PLUS;
+                    break;
+            }
+            getThinkingAnalyticsSDK(appId).enableThirdPartySharing(thirdType, maps);
+        }
+    }
+
+    private void setTrackStatus(MethodCall call, Result result, String appId) {
+        Integer status = call.argument("status");
+        if (null == status) return;
+        switch (status) {
+            case 0:
+                getThinkingAnalyticsSDK(appId).setTrackStatus(ThinkingAnalyticsSDK.TATrackStatus.PAUSE);
+                break;
+            case 1:
+                getThinkingAnalyticsSDK(appId).setTrackStatus(ThinkingAnalyticsSDK.TATrackStatus.STOP);
+                break;
+            case 2:
+                getThinkingAnalyticsSDK(appId).setTrackStatus(ThinkingAnalyticsSDK.TATrackStatus.SAVE_ONLY);
+                break;
+            case 3:
+                getThinkingAnalyticsSDK(appId).setTrackStatus(ThinkingAnalyticsSDK.TATrackStatus.NORMAL);
+                break;
+        }
+    }
+
     private void track(MethodCall call, Result result, String appId) {
         String eventName = call.argument("eventName");
         Map<String, Object> mapProperties = call.<HashMap<String, Object>>argument("properties");
@@ -268,7 +438,7 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
                 getThinkingAnalyticsSDK(appId).track(eventName, properties);
             }
         } catch (Exception e) {
-            TDLog.e(TAG, e.toString());
+            Log.e(TAG, e.toString());
             result.error(e.getClass().getName(), e.toString(), "");
             return;
         }
@@ -314,11 +484,11 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
                     break;
                 }
                 default:
-                    TDLog.e(TAG, "EventType is not available!!");
+                    Log.e(TAG, "EventType is not available!!");
                     break;
             }
         } catch (Exception e) {
-            TDLog.e(TAG, e.toString());
+            Log.e(TAG, e.toString());
             result.error(e.getClass().getName(), e.toString(), "");
             return;
         }
@@ -343,6 +513,9 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
                     break;
                 case USER_APPEND:
                     instance.user_append(properties);
+                    break;
+                case USER_UNIQ_APPEND:
+                    instance.user_uniqAppend(properties);
                     break;
                 case USER_ADD:
                     instance.user_add(properties);
@@ -412,6 +585,70 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
         }
 
         result.success(null);
+    }
+
+    private void getSuperProperties(Result result, String appId) {
+        JSONObject properties = getThinkingAnalyticsSDK(appId).getSuperProperties();
+        if (properties != null) {
+//            Iterator<String> keys = properties.keys();
+//            Map<String, Object> mapProperties = new HashMap<>();
+//            while (keys.hasNext()) {
+//                String key = keys.next();
+//                Object value = properties.opt(key);
+//                mapProperties.put(key, value);
+//            }
+            result.success(jsonToMap(properties));
+        } else {
+            result.success(null);
+        }
+    }
+
+    private Map<String, Object> jsonToMap(JSONObject properties) {
+        Map<String, Object> mapProperties = new HashMap<>();
+        Iterator<String> keys = properties.keys();
+        while (keys.hasNext()) {
+            String key = keys.next();
+            Object value = properties.opt(key);
+            if (value instanceof JSONObject) {
+                mapProperties.put(key, jsonToMap((JSONObject) value));
+            } else if (value instanceof JSONArray) {
+                mapProperties.put(key, jsonArrayToList((JSONArray) value));
+            } else {
+                mapProperties.put(key, value);
+            }
+        }
+        return mapProperties;
+    }
+
+    private List<Object> jsonArrayToList(JSONArray jsonArr) {
+        List<Object> lists = new ArrayList<>();
+        for (int i = 0; i < jsonArr.length(); i++) {
+            Object value = jsonArr.opt(i);
+            if (value instanceof JSONObject) {
+                lists.add(jsonToMap((JSONObject) value));
+            } else if (value instanceof JSONArray) {
+                lists.add(jsonArrayToList((JSONArray) value));
+            } else {
+                lists.add(value);
+            }
+        }
+        return lists;
+    }
+
+    private void getPresetProperties(Result result, String appId) {
+        JSONObject properties = getThinkingAnalyticsSDK(appId).getPresetProperties().toEventPresetProperties();
+        if (properties != null) {
+            Iterator<String> keys = properties.keys();
+            Map<String, Object> mapProperties = new HashMap<>();
+            while (keys.hasNext()) {
+                String key = keys.next();
+                Object value = properties.opt(key);
+                mapProperties.put(key, value);
+            }
+            result.success(mapProperties);
+        } else {
+            result.success(null);
+        }
     }
 
     private void createLightInstance(Result result, String appId) {

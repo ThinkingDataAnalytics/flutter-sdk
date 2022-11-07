@@ -17,9 +17,10 @@ enum USER_OPERATIONS {
   USER_DEL,
   USER_UNSET,
   USER_APPEND,
+  USER_UNIQ_APPEND,
 }
 
-enum SUPER_PROPERTY_OPERATIONS { SET, CLEAR, UNSET }
+enum SUPER_PROPERTY_OPERATIONS { SET, CLEAR, UNSET, GET }
 
 enum INSTANCE_OPERATIONS {
   TRACK,
@@ -52,11 +53,19 @@ class _MyAppState extends State<MyApp> {
     // 打开日志
     ThinkingAnalyticsAPI.enableLog();
 
+    var sKey = TASecretKey();
+    sKey.publicKey =
+        "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCzAKEGsq67Yd03/RF77VKJ/cQ3zfSboK1wzlQfH2E1fr504WCJHHL/UVgjfUGUjMLIN15FNEelp7TXLToqtYlqqMbEXCfSc14ulRatKQioYnJ8EzgUhG0HcRlulni6vxGJHR9iq4weDNyJFRaZuwIQSrUzIaiVq/3hYijxxhhFqQIDAQAB";
+    sKey.version = 1;
+    sKey.symmetricEncryption = "AES";
+    sKey.asymmetricEncryption = "RSA";
+
     // 初始化 _ta 实例
     _ta = await ThinkingAnalyticsAPI.getInstance(
-        '7a055a4bd7ec423fa5294b4a2c1eff28', 
-        'https://receiver-ta-dev.thinkingdata.cn',
-        );
+        '1b1c1fef65e3482bad5c9d0e6a823356',
+        'https://receiver.ta.thinkingdata.cn',
+        enableEncrypt: true,
+        secretKey: sKey);
 
     // 设置动态公共属性, 动态公共属性不支持自动采集事件
     _ta.setDynamicSuperProperties(() {
@@ -76,6 +85,14 @@ class _MyAppState extends State<MyApp> {
       ThinkingAnalyticsAutoTrackType.APP_CRASH,
     ]);
 
+    _ta.setAutoTrackProperties([
+      ThinkingAnalyticsAutoTrackType.APP_START,
+    ], {
+      'auto_test': 'stu',
+      'auto_arr': [1, 2, 3],
+      'auto_obj': {'obj_test': 'xxx'}
+    });
+
     // 初始化轻实例
     _light = await _ta.createLightInstance();
     _light.identify('light_d_id');
@@ -93,40 +110,55 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     List<Widget> buttons = [
-      RaisedButton(
+      ElevatedButton(
           child: Text('TRACK AN EVENT'), onPressed: () => trackEvent()),
-      RaisedButton(
-          child: Text('TRACK DEFAULT_FIRST_CHECK_ID'), onPressed: () => trackDefaultFirstCheckID()),
-      RaisedButton(
-          child: Text('TRACK FIRST_CHECK_ID'), onPressed: () => trackFirstCheckID()),
-      RaisedButton(
+      ElevatedButton(
+          child: Text('TRACK DEFAULT_FIRST_CHECK_ID'),
+          onPressed: () => trackDefaultFirstCheckID()),
+      ElevatedButton(
+          child: Text('TRACK FIRST_CHECK_ID'),
+          onPressed: () => trackFirstCheckID()),
+      ElevatedButton(
           child: Text('TRACK_UPDATE'), onPressed: () => trackUpdate()),
-      RaisedButton(
+      ElevatedButton(
           child: Text('TRACK_OVERWRITE'), onPressed: () => trackOverwrite()),
-      RaisedButton(
+      ElevatedButton(
           child: Text('TIME EVENT'),
           onPressed: () => _ta.timeEvent('TEST_EVENT')),
-      RaisedButton(
+      ElevatedButton(
           child: Text('LOGIN'), onPressed: () => _ta.login('FLUTTER_A_ID')),
-      RaisedButton(child: Text('LOGOUT'), onPressed: () => _ta.logout()),
-      RaisedButton(
+      ElevatedButton(child: Text('LOGOUT'), onPressed: () => _ta.logout()),
+      ElevatedButton(
           child: Text('SUPER PROPERTIES'),
           onPressed: () => superPropertiesOperations()),
-      RaisedButton(
-        child: Text('USER PROPERTIES'),
-        onPressed: () => userOperations(),
-      ),
-      RaisedButton(child: Text('FLUSH'), onPressed: () => flush()),
-      RaisedButton(
+      ElevatedButton(
+          child: Text('PRESET PROPERTIES'),
+          onPressed: () => presetPropertiesOperations()),
+      ElevatedButton(
+          child: Text('USER PROPERTIES'), onPressed: () => userOperations()),
+      ElevatedButton(
+          child: Text('三方数据接入'), onPressed: () => enableThirdShare()),
+      ElevatedButton(
+          child: Text('停止数据追踪'),
+          onPressed: () => setTrackStatus(TATrackStatus.PAUSE)),
+      ElevatedButton(
+          child: Text('停止数据追踪 清除缓存'),
+          onPressed: () => setTrackStatus(TATrackStatus.STOP)),
+      ElevatedButton(
+          child: Text('停止数据上报'),
+          onPressed: () => setTrackStatus(TATrackStatus.SAVE_ONLY)),
+      ElevatedButton(
+          child: Text('恢复数据上报状态'),
+          onPressed: () => setTrackStatus(TATrackStatus.NORMAL)),
+      ElevatedButton(child: Text('FLUSH'), onPressed: () => flush()),
+      ElevatedButton(
           child: Text('SHOW SDK INFO'), onPressed: () => getSDKInfo(_ta)),
-      RaisedButton(
-        child: Text('LIGHT INSTANCE'),
-        onPressed: () => instanceOperations(_light, 'light'),
-      ),
-      RaisedButton(
-        child: Text('ANOTHER INSTANCE'),
-        onPressed: () => instanceOperations(_ta2, 'another'),
-      ),
+      ElevatedButton(
+          child: Text('LIGHT INSTANCE'),
+          onPressed: () => instanceOperations(_light, 'light')),
+      ElevatedButton(
+          child: Text('ANOTHER INSTANCE'),
+          onPressed: () => instanceOperations(_ta2, 'another')),
     ];
 
     return MaterialApp(
@@ -138,11 +170,16 @@ class _MyAppState extends State<MyApp> {
           title: const Text('Plugin example app'),
         ),
         body: Center(
-            child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: buttons,
-        )),
+            child: new CustomScrollView(shrinkWrap: true, slivers: <Widget>[
+          new SliverPadding(
+            padding: const EdgeInsets.all(20.0),
+            sliver: new SliverList(
+              delegate: new SliverChildListDelegate(
+                buttons,
+              ),
+            ),
+          ),
+        ])),
       ),
     );
   }
@@ -195,6 +232,12 @@ class _MyAppState extends State<MyApp> {
               ),
               SimpleDialogOption(
                 onPressed: () {
+                  Navigator.pop(context, USER_OPERATIONS.USER_UNIQ_APPEND);
+                },
+                child: const Text('USER UNIQ APPEND'),
+              ),
+              SimpleDialogOption(
+                onPressed: () {
                   Navigator.pop(context, USER_OPERATIONS.USER_ADD);
                 },
                 child: const Text('USER ADD'),
@@ -235,6 +278,11 @@ class _MyAppState extends State<MyApp> {
           'USER_LIST': [DateTime.now()],
         });
         break;
+      case USER_OPERATIONS.USER_UNIQ_APPEND:
+        _ta.userUniqAppend(<String, List>{
+          'USER_LIST1': [DateTime.now()],
+        });
+        break;
       case USER_OPERATIONS.USER_ADD:
         _ta.userAdd(<String, num>{
           'USER_INT': 2,
@@ -246,6 +294,8 @@ class _MyAppState extends State<MyApp> {
         break;
       case USER_OPERATIONS.USER_DEL:
         _ta.userDelete();
+        break;
+      default:
         break;
     }
   }
@@ -275,6 +325,12 @@ class _MyAppState extends State<MyApp> {
                 },
                 child: const Text('UNSET A SUPER PROPERTY'),
               ),
+              SimpleDialogOption(
+                onPressed: () {
+                  Navigator.pop(context, SUPER_PROPERTY_OPERATIONS.GET);
+                },
+                child: const Text('GET SUPER PROPERTIES'),
+              ),
             ],
           );
         })) {
@@ -296,7 +352,22 @@ class _MyAppState extends State<MyApp> {
       case SUPER_PROPERTY_OPERATIONS.UNSET:
         _ta.unsetSuperProperty('SUPER_LIST');
         break;
+      case SUPER_PROPERTY_OPERATIONS.GET:
+        var superProperties = await _ta.getSuperProperties();
+        print("super properties: " + superProperties.toString());
+        break;
+      default:
+        break;
     }
+  }
+
+  Future<void> presetPropertiesOperations() async {
+    TDPresetProperties presetProperties = await _ta.getPresetProperties();
+    String deviceId = presetProperties.deviceId!;
+    print("preset properties: device_id = " + deviceId);
+    Map<String, dynamic>? eventPresetProperties =
+        presetProperties.toEventPresetProperties();
+    print("preset properties: " + eventPresetProperties.toString());
   }
 
   void trackEvent() {
@@ -319,7 +390,8 @@ class _MyAppState extends State<MyApp> {
       'PROP_BOOL': false,
       'PROP_STRING': 'flutter test',
     };
-    var firstModel = TrackFirstEventModel('EventName_Flutter_FirstCheckID', '', properties);
+    var firstModel =
+        TrackFirstEventModel('EventName_Flutter_FirstCheckID', '', properties);
     firstModel.dateTime = DateTime.now().toUtc();
     firstModel.timeZone = 'UTC';
     _ta.trackEventModel(firstModel);
@@ -334,7 +406,8 @@ class _MyAppState extends State<MyApp> {
       'PROP_BOOL': false,
       'PROP_STRING': 'flutter test',
     };
-    var firstModel = TrackFirstEventModel('EventName_Flutter_FirstCheckID', 'FlutterFirstCheckID', properties);
+    var firstModel = TrackFirstEventModel(
+        'EventName_Flutter_FirstCheckID', 'FlutterFirstCheckID', properties);
     firstModel.dateTime = DateTime.now().toUtc();
     firstModel.timeZone = 'UTC';
     _ta.trackEventModel(firstModel);
@@ -349,7 +422,8 @@ class _MyAppState extends State<MyApp> {
       'PROP_BOOL': false,
       'PROP_STRING': 'flutter test',
     };
-    var updateModel = TrackUpdateEventModel('EventName_Flutter_FirstCheckID', 'FlutterEditEventID', properties);
+    var updateModel = TrackUpdateEventModel(
+        'EventName_Flutter_FirstCheckID', 'FlutterEditEventID', properties);
     updateModel.dateTime = DateTime.now().toUtc();
     updateModel.timeZone = 'UTC';
     _ta.trackEventModel(updateModel);
@@ -366,10 +440,29 @@ class _MyAppState extends State<MyApp> {
       'PROP_EDIT_KEY': 'PROP_EDIT_VALUE_UPDATE',
       'PROP_EDIT_KEY2': 'PROP_EDIT_VALUE_UPDATE2',
     };
-    var overwriteModel = TrackOverwriteEventModel('EventName_Flutter_FirstCheckID', 'FlutterEditEventID', properties);
+    var overwriteModel = TrackOverwriteEventModel(
+        'EventName_Flutter_FirstCheckID', 'FlutterEditEventID', properties);
     overwriteModel.dateTime = DateTime.now().toUtc();
     overwriteModel.timeZone = 'UTC';
     _ta.trackEventModel(overwriteModel);
+  }
+
+  void enableThirdShare() {
+    _ta.enableThirdPartySharing([
+      TAThirdPartyShareType.TA_APPS_FLYER,
+      TAThirdPartyShareType.TA_ADJUST,
+      TAThirdPartyShareType.TA_BRANCH,
+      TAThirdPartyShareType.TA_IRON_SOURCE,
+      TAThirdPartyShareType.TA_TOP_ON,
+      TAThirdPartyShareType.TA_TRACKING,
+      TAThirdPartyShareType.TA_TRAD_PLUS
+    ]);
+    // _ta.enableThirdPartySharing(
+    //     TAThirdPartyShareType.TA_TRAD_PLUS, {'name': 'jack'});
+  }
+
+  void setTrackStatus(TATrackStatus status) {
+    _ta.setTrackStatus(status);
   }
 
   void flush() {
@@ -437,6 +530,8 @@ class _MyAppState extends State<MyApp> {
         break;
       case INSTANCE_OPERATIONS.INFO:
         getSDKInfo(instance);
+        break;
+      default:
         break;
     }
   }

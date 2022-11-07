@@ -9,8 +9,10 @@ import 'package:flutter/services.dart';
 enum ThinkingAnalyticsMode {
   /// All data will be cached in device and posted to server according to certain strategies.
   NORMAL,
+
   /// Posts every data to server and throws exception in any unexpected condition.
   DEBUG,
+
   /// Similar to DEBUG, but no data will be truly saved to server.
   DEBUG_ONLY
 }
@@ -21,16 +23,18 @@ enum ThinkingAnalyticsMode {
 enum ThinkingAnalyticsAutoTrackType {
   /// An event named [ta_app_start] will be tracked when your App enter foreground.
   APP_START,
+
   /// An event named [ta_app_end] will be tracked when your App enter foreground.
   APP_END,
+
   /// An event named [ta_app_install] will be tracked when your App be first opened after installed.
   APP_INSTALL,
+
   /// An event named [ta_app_crash] will be tracked when there is an uncaught exception.
   APP_CRASH
 }
 
 enum ThinkingAnalyticsTrackEventType {
-
   TRACK_FIRST,
 
   TRACK_UPDATE,
@@ -38,19 +42,48 @@ enum ThinkingAnalyticsTrackEventType {
   TRACK_OVERWRITE
 }
 
+enum TAThirdPartyShareType {
+  //AppsFlyer
+  TA_APPS_FLYER,
+  //IronSource
+  TA_IRON_SOURCE,
+  //Adjust
+  TA_ADJUST,
+  //Branch
+  TA_BRANCH,
+  //TopOn
+  TA_TOP_ON,
+  //热云
+  TA_TRACKING,
+  //Tradplus
+  TA_TRAD_PLUS
+}
+
+enum TATrackStatus {
+  //停止SDK数据追踪
+  PAUSE,
+  //停止SDK数据追踪 清除缓存
+  STOP,
+  //停止SDK数据上报
+  SAVE_ONLY,
+  //恢复所有状态
+  NORMAL,
+}
+
 abstract class TrackEventModel {
   String? eventName;
   ThinkingAnalyticsTrackEventType? eventType;
   String? extraID;
-  
+
   Map<String, dynamic>? properties;
-  
+
   DateTime? dateTime;
   String? timeZone;
 }
- 
+
 class TrackFirstEventModel extends TrackEventModel {
-  TrackFirstEventModel(String eventName, String firstCheckID, Map<String, dynamic> properties) {
+  TrackFirstEventModel(
+      String eventName, String firstCheckID, Map<String, dynamic> properties) {
     this.eventName = eventName;
     this.properties = properties;
     this.eventType = ThinkingAnalyticsTrackEventType.TRACK_FIRST;
@@ -59,7 +92,8 @@ class TrackFirstEventModel extends TrackEventModel {
 }
 
 class TrackUpdateEventModel extends TrackEventModel {
-  TrackUpdateEventModel(String eventName, String eventID, Map<String, dynamic> properties) {
+  TrackUpdateEventModel(
+      String eventName, String eventID, Map<String, dynamic> properties) {
     this.eventName = eventName;
     this.properties = properties;
     this.eventType = ThinkingAnalyticsTrackEventType.TRACK_UPDATE;
@@ -68,12 +102,59 @@ class TrackUpdateEventModel extends TrackEventModel {
 }
 
 class TrackOverwriteEventModel extends TrackEventModel {
-  TrackOverwriteEventModel(String eventName, String eventID, Map<String, dynamic> properties) {
+  TrackOverwriteEventModel(
+      String eventName, String eventID, Map<String, dynamic> properties) {
     this.eventName = eventName;
     this.properties = properties;
     this.eventType = ThinkingAnalyticsTrackEventType.TRACK_OVERWRITE;
     this.extraID = eventID;
   }
+}
+
+class TDPresetProperties {
+  String? bundleId;
+  String? carrier;
+  String? deviceId;
+  String? deviceModel;
+  String? manufacture;
+  String? networkType;
+  String? os;
+  String? osVersion;
+  int? screenHeight;
+  int? screenWidth;
+  String? systemLanguage;
+  double? zoneOffset;
+  String? appVersion;
+
+  Map<String, dynamic>? presetProperties;
+  TDPresetProperties(Map<String, dynamic> presetProperties) {
+    this.presetProperties = presetProperties;
+    this.bundleId = presetProperties['#bundle_id'];
+    this.carrier = presetProperties['#carrier'];
+    this.deviceId = presetProperties['#device_id'];
+    this.deviceModel = presetProperties['#device_model'];
+    this.manufacture = presetProperties['#manufacturer'];
+    this.networkType = presetProperties['#network_type'];
+    this.os = presetProperties['#os'];
+    this.osVersion = presetProperties['#os_version'];
+    this.screenHeight = presetProperties['#screen_height'];
+    this.screenWidth = presetProperties['#screen_width'];
+    this.systemLanguage = presetProperties['#system_language'];
+    this.zoneOffset = presetProperties['#zone_offset'];
+    this.appVersion = presetProperties['#app_version'];
+  }
+
+  ///生成事件预制属性，不支持把事件预制属性设置为用户预制属性
+  Map<String, dynamic>? toEventPresetProperties() {
+    return this.presetProperties;
+  }
+}
+
+class TASecretKey {
+  String? publicKey;
+  int? version;
+  String? symmetricEncryption;
+  String? asymmetricEncryption;
 }
 
 /// Official Thinking Analytics API for tracking events and user properties.
@@ -91,8 +172,9 @@ class TrackOverwriteEventModel extends TrackEventModel {
 /// ```
 class ThinkingAnalyticsAPI {
   static const MethodChannel _channel =
-  const MethodChannel('thinkingdata.cn/ThinkingAnalytics');
+      const MethodChannel('thinkingdata.cn/ThinkingAnalytics');
 
+  static const _libVersion = "2.2.0";
 
   // The APP ID bind to the instance.
   final String _appId;
@@ -112,9 +194,16 @@ class ThinkingAnalyticsAPI {
   /// NOTE:
   /// 1. DO NOT use [ThinkingAnalyticsMode.DEBUG] or [ThinkingAnalyticsMode.DEBUG_ONLY] in online App.
   /// 2. The DEBUG mode could not be enabled unless you set your device ID in TA server.
-  static Future<ThinkingAnalyticsAPI> getInstance(String appId, String serverUrl, {String? timeZone, ThinkingAnalyticsMode? mode}) async {
-
-    Map<String, dynamic> config = <String, dynamic>{'appId': appId, 'serverUrl': serverUrl};
+  static Future<ThinkingAnalyticsAPI> getInstance(
+      String appId, String serverUrl,
+      {String? timeZone,
+      ThinkingAnalyticsMode? mode,
+      bool? enableEncrypt,
+      TASecretKey? secretKey}) async {
+    Map<String, dynamic> config = <String, dynamic>{
+      'appId': appId,
+      'serverUrl': serverUrl
+    };
 
     if (null != timeZone) {
       config['timeZone'] = timeZone;
@@ -122,6 +211,20 @@ class ThinkingAnalyticsAPI {
 
     if (null != mode) {
       config['mode'] = mode.index;
+    }
+    config['lib_version'] = _libVersion;
+
+    if (null != secretKey) {
+      config['secretKey'] = {
+        'publicKey': secretKey.publicKey,
+        'version': secretKey.version,
+        'symmetricEncryption': secretKey.symmetricEncryption,
+        'asymmetricEncryption': secretKey.asymmetricEncryption
+      };
+    }
+
+    if (null != enableEncrypt) {
+      config['enableEncrypt'] = enableEncrypt;
     }
 
     await _channel.invokeMethod<int>('getInstance', config);
@@ -136,7 +239,8 @@ class ThinkingAnalyticsAPI {
 
   /// Calibrate SDK time with current Unix timestamp
   static void calibrateTime(int timestamp) {
-    _channel.invokeMethod('calibrateTime', <String, dynamic>{'timestamp': timestamp});
+    _channel.invokeMethod(
+        'calibrateTime', <String, dynamic>{'timestamp': timestamp});
   }
 
   /// Calibrate SDK time with a given NTP server.
@@ -144,7 +248,8 @@ class ThinkingAnalyticsAPI {
   /// SDK will try to get calibrated time from the NTP server with a default timeout 3 seconds.
   /// If failed, device time will be used for tracking data.
   static void calibrateTimeWithNtp(String ntpServer) {
-    _channel.invokeMethod('calibrateTimeWithNtp', <String, dynamic>{'ntpServer': ntpServer});
+    _channel.invokeMethod(
+        'calibrateTimeWithNtp', <String, dynamic>{'ntpServer': ntpServer});
   }
 
   /// Enable auto track events.
@@ -152,12 +257,23 @@ class ThinkingAnalyticsAPI {
   /// You can enable auto tracking by calling the method with [autoTrackTypes], which is a List of [ThinkingAnalyticsAutoTrackType].
   /// If you need to set your own distinct ID or super properties, please do that before enable auto tracking.
   void enableAutoTrack(List<ThinkingAnalyticsAutoTrackType> autoTrackTypes) {
+    // ignore: unnecessary_null_comparison
     if (null != autoTrackTypes) {
       _channel.invokeMethod('enableAutoTrack', <String, dynamic>{
         'appId': _appId,
-        'types': autoTrackTypes.map((e)=> e.index).toList(),
+        'types': autoTrackTypes.map((e) => e.index).toList(),
       });
     }
+  }
+
+  void setAutoTrackProperties(
+      List<ThinkingAnalyticsAutoTrackType> autoTrackTypes,
+      Map<String, dynamic> autoTrackEventProperties) {
+    _channel.invokeMethod('setAutoTrackProperties', <String, dynamic>{
+      'appId': _appId,
+      'types': autoTrackTypes.map((e) => e.index).toList(),
+      'properties': autoTrackEventProperties
+    });
   }
 
   @visibleForTesting
@@ -168,7 +284,8 @@ class ThinkingAnalyticsAPI {
   /// Light instance shares most configuration like APP ID and Server URL with the master instance. But the user IDs of light
   /// instance are different with its master instance.
   Future<ThinkingAnalyticsAPI> createLightInstance() async {
-    String? lightAppId = await _channel.invokeMethod<String>('createLightInstance', <String, dynamic> {'appId': this._appId});
+    String? lightAppId = await _channel.invokeMethod<String>(
+        'createLightInstance', <String, dynamic>{'appId': this._appId});
 
     return ThinkingAnalyticsAPI.private(lightAppId!);
   }
@@ -179,7 +296,10 @@ class ThinkingAnalyticsAPI {
   ///
   /// By default, the event time will be set to the device time with default time zone settings. You can pass a [dateTime] and
   /// a valid [timeZone] name to set the event time.
-  void track(String eventName, {Map<String, dynamic>? properties, DateTime? dateTime, String? timeZone}) {
+  void track(String eventName,
+      {Map<String, dynamic>? properties,
+      DateTime? dateTime,
+      String? timeZone}) {
     Map<String, dynamic> finalProperties = new Map<String, dynamic>();
     if (this._getDynamicSuperProperties != null) {
       finalProperties = this._getDynamicSuperProperties!();
@@ -209,7 +329,7 @@ class ThinkingAnalyticsAPI {
 
   /// 特殊事件上报
   /// 首次事件: 带有#first_check_id字段, 值为参数extraID, 事件类型为track, #first_check_id默认为设备id.
-  /// 
+  ///
   /// 事件更新/重写: 事件类型为track_update / track_overwrite, 根据#event_name、#event_id匹配需要更新/重写的数据
   /// #event_id 值为extraID.
   void trackEventModel(TrackEventModel eventModel) {
@@ -260,7 +380,8 @@ class ThinkingAnalyticsAPI {
   /// userSet will create user properties or update the existing user properties.
   void userSet(Map<String, dynamic> properties) {
     _searchDate(properties);
-    _channel.invokeMethod<void>('userSet', <String, dynamic>{'properties':properties, 'appId': this._appId});
+    _channel.invokeMethod<void>('userSet',
+        <String, dynamic>{'properties': properties, 'appId': this._appId});
   }
 
   /// Sets user properties only once.
@@ -268,34 +389,47 @@ class ThinkingAnalyticsAPI {
   /// userSetOnce DO NOT update the existing user properties.
   void userSetOnce(Map<String, dynamic> properties) {
     _searchDate(properties);
-    _channel.invokeMethod<void>('userSetOnce', <String, dynamic>{'properties':properties, 'appId': this._appId});
+    _channel.invokeMethod<void>('userSetOnce',
+        <String, dynamic>{'properties': properties, 'appId': this._appId});
   }
 
   /// Updates user properties of num type by adding a value.
   ///
   /// Passing a negative value for a property is equals to subtraction.
   void userAdd(Map<String, num> properties) {
-    _channel.invokeMethod<void>('userAdd', <String, dynamic>{'properties': properties, 'appId': this._appId});
+    _channel.invokeMethod<void>('userAdd',
+        <String, dynamic>{'properties': properties, 'appId': this._appId});
   }
 
   /// Updates user properties of list type by appending some elements.
   void userAppend(Map<String, List> properties) {
     properties.updateAll((String k, List v) {
-        return v.map((e)=> e is DateTime ? _formatDateString(e) : e).toList();
+      return v.map((e) => e is DateTime ? _formatDateString(e) : e).toList();
     });
-    _channel.invokeMethod<void>('userAppend', <String, dynamic>{'properties':properties, 'appId': this._appId});
+    _channel.invokeMethod<void>('userAppend',
+        <String, dynamic>{'properties': properties, 'appId': this._appId});
+  }
+
+  void userUniqAppend(Map<String, List> properties) {
+    properties.updateAll((String k, List v) {
+      return v.map((e) => e is DateTime ? _formatDateString(e) : e).toList();
+    });
+    _channel.invokeMethod<void>('userUniqAppend',
+        <String, dynamic>{'properties': properties, 'appId': this._appId});
   }
 
   /// Deletes a [property] from the user properties.
   void userUnset(String property) {
-    _channel.invokeMethod<void>('userUnset', <String, dynamic>{'property': property, 'appId': this._appId});
+    _channel.invokeMethod<void>('userUnset',
+        <String, dynamic>{'property': property, 'appId': this._appId});
   }
 
   /// Deletes the user profile from TA server.
   ///
   /// This operation is irreversible. The data will be remained.
   void userDelete() {
-    _channel.invokeMethod('userDelete', <String, dynamic>{'appId': this._appId});
+    _channel
+        .invokeMethod('userDelete', <String, dynamic>{'appId': this._appId});
   }
 
   /// Sets super properties.
@@ -303,17 +437,26 @@ class ThinkingAnalyticsAPI {
   /// Super properties will be put in every event data as the event's properties. Super properties will be cached in device.
   void setSuperProperties(Map<String, dynamic> properties) {
     _searchDate(properties);
-    _channel.invokeMethod<void>('setSuperProperties', <String, dynamic>{'properties': properties, 'appId': this._appId});
+    _channel.invokeMethod<void>('setSuperProperties',
+        <String, dynamic>{'properties': properties, 'appId': this._appId});
+  }
+
+  /// Gets super properties
+  Future<Map<String, dynamic>?> getSuperProperties() async {
+    return await _channel.invokeMapMethod<String, dynamic>(
+        'getSuperProperties', <String, dynamic>{'appId': this._appId});
   }
 
   /// Clears super properties.
   void clearSuperProperties() {
-    _channel.invokeMethod('clearSuperProperties', <String, dynamic>{'appId': this._appId});
+    _channel.invokeMethod(
+        'clearSuperProperties', <String, dynamic>{'appId': this._appId});
   }
 
   /// Deletes a [property] from current super properties.
   void unsetSuperProperty(String property) {
-    _channel.invokeMethod('unsetSuperProperty', <String, dynamic>{'property': property, 'appId': this._appId});
+    _channel.invokeMethod('unsetSuperProperty',
+        <String, dynamic>{'property': property, 'appId': this._appId});
   }
 
   /// Sets the dynamic super properties.
@@ -321,6 +464,19 @@ class ThinkingAnalyticsAPI {
   /// [f] is a function that retuning valid properties. It will be called in every track to get the dynamic super properties.
   void setDynamicSuperProperties(Map<String, dynamic> f()) {
     this._getDynamicSuperProperties = f;
+  }
+
+  /// Gets super properties
+  Future<Map<String, dynamic>?> getPresetPropertiesMap() async {
+    return await _channel.invokeMapMethod<String, dynamic>(
+        'getPresetProperties', <String, dynamic>{'appId': this._appId});
+  }
+
+  /// Gets super properties
+  Future<TDPresetProperties> getPresetProperties() async {
+    Map<String, dynamic>? properties = await getPresetPropertiesMap();
+    var presetProperties = new TDPresetProperties(properties!);
+    return await presetProperties;
   }
 
   /// Uploads the cached data immediately.
@@ -335,21 +491,24 @@ class ThinkingAnalyticsAPI {
   ///
   /// When you track an event with name [eventName], a property `#duration` will be put in the event properties.
   void timeEvent(String eventName) {
-    _channel.invokeMethod('timeEvent', <String, dynamic>{'eventName': eventName, 'appId': this._appId});
+    _channel.invokeMethod('timeEvent',
+        <String, dynamic>{'eventName': eventName, 'appId': this._appId});
   }
 
   /// Sets the account ID.
   ///
   /// `login` DO NOT upload any data to TA server.
   void login(String accountId) {
-    _channel.invokeMethod<void>('login', <String, dynamic>{'accountId': accountId, 'appId': this._appId});
+    _channel.invokeMethod<void>('login',
+        <String, dynamic>{'accountId': accountId, 'appId': this._appId});
   }
 
   /// Clears the account ID.
   ///
   /// `logout` DO NOT upload any data to TA server.
   void logout() {
-    _channel.invokeMethod<void>('logout', <String, dynamic>{'appId': this._appId});
+    _channel
+        .invokeMethod<void>('logout', <String, dynamic>{'appId': this._appId});
   }
 
   /// Sets the distinct ID.
@@ -357,17 +516,20 @@ class ThinkingAnalyticsAPI {
   /// By default, a random UUID will be used to identify a user. You can change the distinct ID by calling `identify`.
   /// `identify` DO NOT upload any data to TA server.
   void identify(String distinctId) {
-    _channel.invokeMethod<void>('identify', <String, dynamic>{'distinctId': distinctId, 'appId': this._appId});
+    _channel.invokeMethod<void>('identify',
+        <String, dynamic>{'distinctId': distinctId, 'appId': this._appId});
   }
 
   /// Gets the current distinct ID.
   Future<String?> getDistinctId() async {
-    return await _channel.invokeMethod<String>('getDistinctId', <String, dynamic>{'appId': this._appId});
+    return await _channel.invokeMethod<String>(
+        'getDistinctId', <String, dynamic>{'appId': this._appId});
   }
 
   /// Gets the device ID.
   Future<String?> getDeviceId() async {
-    return await _channel.invokeMethod<String>('getDeviceId', <String, dynamic>{'appId': this._appId});
+    return await _channel.invokeMethod<String>(
+        'getDeviceId', <String, dynamic>{'appId': this._appId});
   }
 
   /// Stops the SDK function.
@@ -376,30 +538,56 @@ class ThinkingAnalyticsAPI {
   /// an user delete data to TA server before stopping SDK functions.
   void optOutTracking([bool deleteUser = false]) {
     _getDynamicSuperProperties = null;
-    _channel.invokeMethod('optOutTracking', <String, dynamic>{'deleteUser': deleteUser, 'appId': this._appId});
+    _channel.invokeMethod('optOutTracking',
+        <String, dynamic>{'deleteUser': deleteUser, 'appId': this._appId});
   }
 
   /// Opts in the SDK being opt outed.
   void optInTracking() {
-    _channel.invokeMethod('optInTracking', <String, dynamic>{'appId': this._appId});
+    _channel
+        .invokeMethod('optInTracking', <String, dynamic>{'appId': this._appId});
   }
 
   /// Pause/resume SDK functions.
   ///
   /// The cached data and local settings such as user IDs and super properties will not be deleted.
   void enableTracking(bool enabled) {
-    _channel.invokeMethod('enableTracking', <String, dynamic>{'enabled': enabled, 'appId': this._appId});
+    _channel.invokeMethod('enableTracking',
+        <String, dynamic>{'enabled': enabled, 'appId': this._appId});
+  }
+
+  //支持三方数据接入
+  void enableThirdPartySharing([dynamic type, params]) {
+    if (type is List) {
+      _channel.invokeMethod('enableThirdPartySharing', <String, dynamic>{
+        'appId': _appId,
+        'types': type.map((e) => e.index).toList(),
+      });
+    } else if (type is TAThirdPartyShareType) {
+      _channel.invokeMethod('enableThirdPartySharing', <String, dynamic>{
+        'appId': _appId,
+        'type': type.index,
+        'params': params
+      });
+    }
+  }
+
+  //数据停止/暂停上报接口
+  void setTrackStatus(TATrackStatus status) {
+    _channel.invokeMethod('setTrackStatus',
+        <String, dynamic>{'status': status.index, 'appId': this._appId});
   }
 
   // Formats all DateTime value in properties.
   void _searchDate(Map<String, dynamic> properties) {
+    // ignore: unnecessary_null_comparison
     if (properties == null) return;
 
     properties.updateAll((String k, dynamic v) {
       if (v is DateTime) {
         return _formatDateString(v);
       } else if (v is List) {
-        return v.map((e)=> e is DateTime ? _formatDateString(e) : e).toList();
+        return v.map((e) => e is DateTime ? _formatDateString(e) : e).toList();
       } else {
         return v;
       }
