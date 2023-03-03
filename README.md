@@ -1,60 +1,9 @@
-# thinking_analytics
+# ThinkingData SDK for Flutter
+![output](https://user-images.githubusercontent.com/53337625/205621683-ed9b97ef-6a52-4903-a2c0-a955dddebb7d.png)
 
-The Official Thinking Analytics Flutter plugin. Used to track events and user properties to [Thinking Analytics](https://www.thinkingdata.cn).
+This is the [ThinkingData](https://www.thinkingdata.cn)™ SDK for Flutter. Documentation is available on our help center in the following languages:
 
-## Getting Started
+- [English](https://docs.thinkingdata.cn/ta-manual/latest/en/99oQ5UeGzK09DWfPCaQwCg/installation/client_sdk/app_third_support/flutter_sdk_installation/flutter_sdk_installation.html)
+- [中文](https://docs.thinkingdata.cn/ta-manual/latest/installation/installation_menu/client_sdk/app_third_support/flutter_sdk_installation/flutter_sdk_installation.html)
 
-To use this plugin, add `thinking_analytics` as a [dependency in your pubspec.yaml file](https://flutter.io/platform-plugins/).
-
-Find the APP ID and Server URL from your Thinking Analytics project settings and TA cluster administrator.
-
-Import `package:thinking_analytics/thinking_analytics.dart`, and get an instance of `ThinkingAnalyticsAPI` with your APP ID and Server URL.
-
-In the example below - replace the string `APP_ID` and `SERVER_URL` with your own APP ID and Server URL.
-
-In addition, several named parameters are allowed to be passed to the getInstance function for additional options, including:
-* timeZone: default timeZone in native for serializing date to string of required format.
-* mode: [ThinkingAnalyticsMode]. Currently we support 3 modes including normal, debug, and debug only.
-
-### Example
-
-```dart
-import 'package:thinking_analytics/thinking_analytics.dart';
-
-
-Future<void> example() async {
-  final ThinkingAnalyticsAPI ta = await ThinkingAnalyticsAPI.getInstance('APP_ID', 'https://SERVER_URL');
-
-  // optional. set your own distinct ID as an anonymous ID
-  ta.identify('you distinct ID');
-
-  // optional. set account ID for the user
-  ta.login('the account ID');
-
-  // track an simple event.
-  ta.track('example_event');
-
-  // track an event with properties
-  ta.track('another_event', properties: <String, dynamic>{
-    'PROP_INT': 5678,
-    'PROP_DOUBLE': 12.3,
-    'PROP_DATE': DateTime.now(),
-    'PROP_LIST': ['apple', 'ball', 1234],
-    'PROP_BOOL': false,
-    'PROP_STRING': 'flutter test',
-    });
-
-  // set user properties
-  ta.userSet(<String, dynamic>{
-    'USER_INT': 1,
-    'USER_DOUBLE': 50.12,
-    'USER_LIST': ['apple', 'ball', 'cat', 1, DateTime.now().toUtc()],
-    'USER_BOOL': true,
-    'USER_STRING': 'a user value',
-    'USER_DATE': DateTime.now(),
-    });
-
-  // optional. post local data to server immediately
-  ta.flush();
-}
-```
+---
