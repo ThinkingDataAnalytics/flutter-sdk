@@ -50,7 +50,6 @@ class _MyAppState extends State<MyApp> {
 
     setState(() {});
 
-    // 打开日志
     ThinkingAnalyticsAPI.enableLog();
 
     var sKey = TASecretKey();
@@ -60,14 +59,12 @@ class _MyAppState extends State<MyApp> {
     sKey.symmetricEncryption = "AES";
     sKey.asymmetricEncryption = "RSA";
 
-    // 初始化 _ta 实例
     _ta = await ThinkingAnalyticsAPI.getInstance(
         '1b1c1fef65e3482bad5c9d0e6a823356',
         'https://receiver.ta.thinkingdata.cn',
         enableEncrypt: true,
         secretKey: sKey);
 
-    // 设置动态公共属性, 动态公共属性不支持自动采集事件
     _ta.setDynamicSuperProperties(() {
       return <String, dynamic>{
         'DYNAMIC_DATE': DateTime.now().toUtc(),
@@ -93,11 +90,9 @@ class _MyAppState extends State<MyApp> {
       'auto_obj': {'obj_test': 'xxx'}
     });
 
-    // 初始化轻实例
     _light = await _ta.createLightInstance();
     _light.identify('light_d_id');
 
-    // 初始化 _ta2 实例，对齐 UTC 时区，开启 DEBUG 模式
     _ta2 = await ThinkingAnalyticsAPI.getInstance(
       '7a055a4bd7ec423fa5294b4a2c1eff28',
       'https://receiver-ta-dev.thinkingdata.cn',
@@ -137,18 +132,19 @@ class _MyAppState extends State<MyApp> {
       ElevatedButton(
           child: Text('USER PROPERTIES'), onPressed: () => userOperations()),
       ElevatedButton(
-          child: Text('三方数据接入'), onPressed: () => enableThirdShare()),
+          child: Text('Three-party data access'),
+          onPressed: () => enableThirdShare()),
       ElevatedButton(
-          child: Text('停止数据追踪'),
+          child: Text('Stop data tracking'),
           onPressed: () => setTrackStatus(TATrackStatus.PAUSE)),
       ElevatedButton(
-          child: Text('停止数据追踪 清除缓存'),
+          child: Text('Stop data tracing to clear the cache'),
           onPressed: () => setTrackStatus(TATrackStatus.STOP)),
       ElevatedButton(
-          child: Text('停止数据上报'),
+          child: Text('Stopping Data Reporting'),
           onPressed: () => setTrackStatus(TATrackStatus.SAVE_ONLY)),
       ElevatedButton(
-          child: Text('恢复数据上报状态'),
+          child: Text('Restore the data reporting status'),
           onPressed: () => setTrackStatus(TATrackStatus.NORMAL)),
       ElevatedButton(child: Text('FLUSH'), onPressed: () => flush()),
       ElevatedButton(

@@ -53,20 +53,20 @@ enum TAThirdPartyShareType {
   TA_BRANCH,
   //TopOn
   TA_TOP_ON,
-  //热云
+  //hot cloud
   TA_TRACKING,
   //Tradplus
   TA_TRAD_PLUS
 }
 
 enum TATrackStatus {
-  //停止SDK数据追踪
+  //Stop SDK data tracking
   PAUSE,
-  //停止SDK数据追踪 清除缓存
+  //Stop SDK data tracking to clear the cache
   STOP,
-  //停止SDK数据上报
+  //Stop SDK data reporting
   SAVE_ONLY,
-  //恢复所有状态
+  //Restore all states
   NORMAL,
 }
 
@@ -144,7 +144,7 @@ class TDPresetProperties {
     this.appVersion = presetProperties['#app_version'];
   }
 
-  ///生成事件预制属性，不支持把事件预制属性设置为用户预制属性
+  ///Generate prefabricated event properties. You cannot set prefabricated event properties to user prefabricated properties
   Map<String, dynamic>? toEventPresetProperties() {
     return this.presetProperties;
   }
@@ -174,7 +174,7 @@ class ThinkingAnalyticsAPI {
   static const MethodChannel _channel =
       const MethodChannel('thinkingdata.cn/ThinkingAnalytics');
 
-  static const _libVersion = "2.2.0";
+  static const _libVersion = "2.2.1";
 
   // The APP ID bind to the instance.
   final String _appId;
@@ -327,11 +327,11 @@ class ThinkingAnalyticsAPI {
     _channel.invokeMethod<void>('track', params);
   }
 
-  /// 特殊事件上报
-  /// 首次事件: 带有#first_check_id字段, 值为参数extraID, 事件类型为track, #first_check_id默认为设备id.
+  /// Special Event Reporting
+  /// First event: With #first_check_id field with parameter extraID, event type track, and #first_check_id default device id.
   ///
-  /// 事件更新/重写: 事件类型为track_update / track_overwrite, 根据#event_name、#event_id匹配需要更新/重写的数据
-  /// #event_id 值为extraID.
+  /// Event update/rewrite: The event type is track_update/track_overwrite. The event type matches the data to be updated/rewritten according to #event_name and #event_id
+  /// The #event_id value is extraID.
   void trackEventModel(TrackEventModel eventModel) {
     Map<String, dynamic> finalProperties = new Map<String, dynamic>();
     if (this._getDynamicSuperProperties != null) {
@@ -498,16 +498,16 @@ class ThinkingAnalyticsAPI {
   /// Sets the account ID.
   ///
   /// `login` DO NOT upload any data to TA server.
-  void login(String accountId) {
-    _channel.invokeMethod<void>('login',
+  Future<void> login(String accountId) async {
+    return await _channel.invokeMethod<void>('login',
         <String, dynamic>{'accountId': accountId, 'appId': this._appId});
   }
 
   /// Clears the account ID.
   ///
   /// `logout` DO NOT upload any data to TA server.
-  void logout() {
-    _channel
+  Future<void> logout() async {
+    return await _channel
         .invokeMethod<void>('logout', <String, dynamic>{'appId': this._appId});
   }
 
@@ -556,7 +556,6 @@ class ThinkingAnalyticsAPI {
         <String, dynamic>{'enabled': enabled, 'appId': this._appId});
   }
 
-  //支持三方数据接入
   void enableThirdPartySharing([dynamic type, params]) {
     if (type is List) {
       _channel.invokeMethod('enableThirdPartySharing', <String, dynamic>{
@@ -572,7 +571,6 @@ class ThinkingAnalyticsAPI {
     }
   }
 
-  //数据停止/暂停上报接口
   void setTrackStatus(TATrackStatus status) {
     _channel.invokeMethod('setTrackStatus',
         <String, dynamic>{'status': status.index, 'appId': this._appId});

@@ -1,6 +1,6 @@
 name: thinking_analytics
 description: Official flutter plugin for tracking events to Thinking Analytics.
-version: 2.2.0
+version: 2.2.1
 homepage: https://www.thinkingdata.cn
 repository: https://github.com/ThinkingDataAnalytics/flutter-sdk
 
