@@ -214,7 +214,7 @@
     }else if([@"enableThirdPartySharing" isEqualToString:call.method]){
         if([arguments objectForKey:@"types"]){
             NSArray *shareTypes = [arguments objectForKey:@"types"];
-            TDThirdPartyShareType types = TDThirdPartyShareTypeNONE;
+            TAThirdPartyShareType types = TDThirdPartyShareTypeNONE;
             for(int i = 0;i<shareTypes.count;i++){
                 NSNumber* value = shareTypes[i];
                 if(value.intValue == 0){
@@ -237,7 +237,7 @@
         }else if([arguments objectForKey:@"type"]){
             NSNumber* type = [arguments objectForKey:@"type"];
             NSDictionary* params = [arguments objectForKey:@"params"];
-            TDThirdPartyShareType t = TDThirdPartyShareTypeNONE;
+            TAThirdPartyShareType t = TDThirdPartyShareTypeNONE;
             if(type.intValue == 0){
                 t = TDThirdPartyShareTypeAPPSFLYER;
             }else if(type.intValue == 1){

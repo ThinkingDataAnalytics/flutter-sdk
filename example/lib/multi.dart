@@ -1,18 +1,14 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
-
-import 'package:thinking_analytics/thinking_analytics.dart';
 import 'package:thinking_analytics/td_analytics.dart';
-import 'package:ta_flutter_plugin_example/multi.dart';
 
-void main() => runApp(new MaterialApp(home: MyApp()));
-
-class MyApp extends StatefulWidget {
+class MultiInstancePage extends StatefulWidget {
   @override
-  _MyAppState createState() => _MyAppState();
+  State<StatefulWidget> createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> {
+class _MyAppState extends State<MultiInstancePage> {
+  static const String APP_ID = "1b1c1fef65e3482bad5c9d0e6a823356";
+
   @override
   void initState() {
     super.initState();
@@ -21,14 +17,7 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> initThinkingDataSDK() async {
     if (!mounted) return;
-    TDAnalytics.enableLog(true);
-    TDConfig config = TDConfig();
-    config.appId = "40eddce753cd4bef9883a01e168c3df0";
-    config.serverUrl = "https://receiver-ta-preview.thinkingdata.cn";
-    // config.setMode(TDMode.DEBUG);
-    config.enableEncrypt(1,
-        "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAti6FnWGv7Lggzg\\/R8hQa\\n4GEtd2ucfntqo6Xkf1sPwCIfndr2u6KGPhWQ24bFUKgtNLDuKnUAg1C\\/OEEL8uON\\nJBdbX9XpckO67tRPSPrY3ufNIxsCJ9td557XxUsnebkOZ+oC1Duk8\\/ENx1pRvU6S\\n4c+UYd6PH8wxw1agD61oJ0ju3CW0aZNZ2xKcWBcIU9KgYTeUtawrmGU5flod88Cq\\nZc8VKB1+nY0tav023jvxwkM3zgQ6vBWIU9\\/aViGECB98YEzJfZjcOTD6zvqsZc\\/W\\nRnUNhBHFPGEwc8ueMvzZNI+FP0pUFLVRwVoYbj\\/tffKbxGExaRFIcgP73BIW6\\/6n\\nQwIDAQAB");
-    TDAnalytics.initWithConfig(config);
+    TDAnalytics.init(APP_ID, "https://receiver.ta.thinkingdata.cn");
   }
 
   @override
@@ -55,10 +44,10 @@ class _MyAppState extends State<MyApp> {
             Expanded(
                 child: OutlinedButton(
                     child: Text(
-                      '时间校准',
+                      '三方数据',
                       style: TextStyle(fontSize: 14),
                     ),
-                    onPressed: () => calibratedTime())),
+                    onPressed: () => enableThirdParty())),
           ],
         ),
       ),
@@ -325,112 +314,57 @@ class _MyAppState extends State<MyApp> {
                       style: TextStyle(fontSize: 14),
                     ),
                     onPressed: () => setTrackStatus1(TDTrackStatus.SAVE_ONLY))),
-            Expanded(
-                child: OutlinedButton(
-                    child: Text(
-                      '三方数据',
-                      style: TextStyle(fontSize: 14),
-                    ),
-                    onPressed: () => enableThirdParty())),
-            Expanded(
-                child: OutlinedButton(
-                    child: Text(
-                      '多实例',
-                      style: TextStyle(fontSize: 14),
-                    ),
-                    onPressed: () {
-                      Navigator.push(context,
-                          MaterialPageRoute(builder: (context) {
-                        return MultiInstancePage();
-                      }));
-                    })),
-          ],
-        ),
-      ),
-      Container(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-                child: OutlinedButton(
-                    child: Text(
-                      '创建轻实例',
-                      style: TextStyle(fontSize: 12),
-                    ),
-                    onPressed: () => lightInstance())),
-            Expanded(
-                child: OutlinedButton(
-                    child: Text(
-                      '轻实例发送事件',
-                      style: TextStyle(fontSize: 10),
-                    ),
-                    onPressed: () => trackLightEvent())),
-            Expanded(
-                child: OutlinedButton(
-                    child: Text(
-                      '轻实例用户属性',
-                      style: TextStyle(fontSize: 10),
-                    ),
-                    onPressed: () {
-                      trackLightUserSet();
-                    })),
           ],
         ),
       )
     ];
-
-    return MaterialApp(
-      theme: ThemeData(
-          //buttonTheme: ButtonThemeData(minWidth: double.infinity),
-          ),
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('单实例测试'),
-        ),
-        body: Container(
-            child: new CustomScrollView(shrinkWrap: true, slivers: <Widget>[
-          new SliverPadding(
-            padding: const EdgeInsets.all(2.0),
-            sliver: new SliverList(
-              delegate: new SliverChildListDelegate(
-                buttons,
-              ),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("多实例测试"),
+      ),
+      body: Container(
+          child: new CustomScrollView(shrinkWrap: true, slivers: <Widget>[
+        new SliverPadding(
+          padding: const EdgeInsets.all(2.0),
+          sliver: new SliverList(
+            delegate: new SliverChildListDelegate(
+              buttons,
             ),
           ),
-        ])),
-      ),
+        ),
+      ])),
     );
   }
 
   /// 自动采集
   void enableAutoTrack() {
-    TDAnalytics.enableAutoTrack(TDAutoTrackEventType.APP_START |
-        TDAutoTrackEventType.APP_END |
-        TDAutoTrackEventType.APP_INSTALL |
-        TDAutoTrackEventType.APP_CRASH);
+    TDAnalytics.enableAutoTrack(
+        TDAutoTrackEventType.APP_START |
+            TDAutoTrackEventType.APP_END |
+            TDAutoTrackEventType.APP_INSTALL |
+            TDAutoTrackEventType.APP_CRASH,
+        appId: APP_ID);
   }
 
   ///自动采集+参数
   void enableAutoTrackAndProperties() {
     TDAnalytics.enableAutoTrack(TDAutoTrackEventType.APP_START,
-        autoTrackEventProperties: {"auto_name": "jack", "auto_age": 19});
-  }
-
-  ///时间校准
-  void calibratedTime() {
-    TDAnalytics.calibrateTime(1688019937000);
+        autoTrackEventProperties: {"auto_name": "jack", "auto_age": 19},
+        appId: APP_ID);
   }
 
   ///发送测试事件
   void trackTestEvent() {
-    TDAnalytics.track("test_event_111", properties: {
-      'PROP_INT': 5678,
-      'PROP_DOUBLE': 12.3,
-      'PROP_DATE': DateTime.now().toUtc(),
-      'PROP_LIST': ['apple', 'ball', 1234],
-      'PROP_BOOL': false,
-      'PROP_STRING': 'flutter test',
-    });
+    TDAnalytics.track("test_event_111",
+        properties: {
+          'PROP_INT': 5678,
+          'PROP_DOUBLE': 12.3,
+          'PROP_DATE': DateTime.now().toUtc(),
+          'PROP_LIST': ['apple', 'ball', 1234],
+          'PROP_BOOL': false,
+          'PROP_STRING': 'flutter test',
+        },
+        appId: APP_ID);
   }
 
   ///发送首次事件
@@ -445,7 +379,7 @@ class _MyAppState extends State<MyApp> {
     };
     TDFirstEventModel model =
         TDFirstEventModel("fist_event", "f_1233", properties);
-    TDAnalytics.trackEventModel(model);
+    TDAnalytics.trackEventModel(model, appId: APP_ID);
   }
 
   ///发送可更新事件
@@ -460,7 +394,7 @@ class _MyAppState extends State<MyApp> {
     };
     TDUpdatableEventModel model =
         TDUpdatableEventModel("update_event", "event_id_123", properties);
-    TDAnalytics.trackEventModel(model);
+    TDAnalytics.trackEventModel(model, appId: APP_ID);
   }
 
   ///发送可重写事件
@@ -477,48 +411,50 @@ class _MyAppState extends State<MyApp> {
     };
     TDOverWritableEventModel model =
         TDOverWritableEventModel("overwrite_event", "event_id_110", properties);
-    TDAnalytics.trackEventModel(model);
+    TDAnalytics.trackEventModel(model, appId: APP_ID);
   }
 
   ///事件计时
   void timeEvent() {
-    TDAnalytics.timeEvent("test_event_111");
+    TDAnalytics.timeEvent("test_event_111", appId: APP_ID);
   }
 
   void userSet() {
-    TDAnalytics.userSet({'user_name': 'TA'});
+    TDAnalytics.userSet({'user_name': 'TA'}, appId: APP_ID);
   }
 
   void userSetOnce() {
-    TDAnalytics.userSetOnce({'first_payment_time': '2018-01-01 01:23:45.678'});
+    TDAnalytics.userSetOnce({'first_payment_time': '2018-01-01 01:23:45.678'},
+        appId: APP_ID);
   }
 
   void userUnset() {
-    TDAnalytics.userUnset("USER_INT");
+    TDAnalytics.userUnset("USER_INT", appId: APP_ID);
   }
 
   void userAdd() {
-    TDAnalytics.userAdd({'total_revenue': 30});
+    TDAnalytics.userAdd({'total_revenue': 30}, appId: APP_ID);
   }
 
   void userAppend() {
     TDAnalytics.userAppend({
       'USER_LIST': ['apple', 'ball'],
-    });
+    }, appId: APP_ID);
   }
 
   void userUniqAppend() {
     TDAnalytics.userUniqAppend({
       'user_list': ['apple', 'ball']
-    });
+    }, appId: APP_ID);
   }
 
   void userDelete() {
-    TDAnalytics.userDelete();
+    TDAnalytics.userDelete(appId: APP_ID);
   }
 
   void setSuperProperties() {
-    TDAnalytics.setSuperProperties({'vip_level': 2, "super_leve": 99});
+    TDAnalytics.setSuperProperties({'vip_level': 2, "super_leve": 99},
+        appId: APP_ID);
   }
 
   void setDynamicProperties() {
@@ -526,80 +462,69 @@ class _MyAppState extends State<MyApp> {
       return {
         'DYNAMIC_DATE': DateTime.now().toUtc(),
       };
-    });
+    }, appId: APP_ID);
   }
 
   void clearOneProperties() {
-    TDAnalytics.unsetSuperProperty("vip_level");
+    TDAnalytics.unsetSuperProperty("vip_level", appId: APP_ID);
   }
 
   void clearAllSuperProperties() {
-    TDAnalytics.clearSuperProperties();
+    TDAnalytics.clearSuperProperties(appId: APP_ID);
   }
 
   void getSuperProperties() async {
-    var map = await TDAnalytics.getSuperProperties();
+    var map = await TDAnalytics.getSuperProperties(appId: APP_ID);
     print("ThinkingAnalytics: " + map.toString());
   }
 
   void getPresetProperties() async {
-    var map = await TDAnalytics.getPresetProperties();
+    var map = await TDAnalytics.getPresetProperties(appId: APP_ID);
     print("ThinkingAnalytics: " + map.toString());
   }
 
   void login() {
-    TDAnalytics.login("llb_123");
-    TDAnalytics.track("sign_up");
+    TDAnalytics.login("llb_123", appId: APP_ID);
+    TDAnalytics.track("sign_up", appId: APP_ID);
   }
 
   void logout() {
-    TDAnalytics.logout();
-    TDAnalytics.track("sign_out");
+    TDAnalytics.logout(appId: APP_ID);
+    TDAnalytics.track("sign_out", appId: APP_ID);
   }
 
   void setDistinctId() {
-    TDAnalytics.setDistinctId("identify_123");
-    TDAnalytics.track("sign_in");
+    TDAnalytics.setDistinctId("identify_123", appId: APP_ID);
+    TDAnalytics.track("sign_in", appId: APP_ID);
   }
 
   void getDistinctId() async {
-    String? distinctId = await TDAnalytics.getDistinctId();
+    String? distinctId = await TDAnalytics.getDistinctId(appId: APP_ID);
     print("ThinkingAnalytics: " + distinctId.toString());
   }
 
   void getDeviceId() async {
-    String? deviceId = await TDAnalytics.getDeviceId();
+    String? deviceId = await TDAnalytics.getDeviceId(appId: APP_ID);
     print("ThinkingAnalytics: " + deviceId.toString());
   }
 
   void flush1() {
-    TDAnalytics.flush();
+    TDAnalytics.flush(appId: APP_ID);
   }
 
   void setTrackStatus1(TDTrackStatus status) {
-    TDAnalytics.setTrackStatus(status);
+    TDAnalytics.setTrackStatus(status, appId: APP_ID);
   }
 
   void enableThirdParty() {
-    TDAnalytics.enableThirdPartySharing(TDThirdPartyType.APPS_FLYER |
-        TDThirdPartyType.ADJUST |
-        TDThirdPartyType.BRANCH |
-        TDThirdPartyType.IRON_SOURCE |
-        TDThirdPartyType.TOP_ON |
-        TDThirdPartyType.TRACKING |
-        TDThirdPartyType.TRAD_PLUS);
-  }
-
-  String? lightAppId;
-  void lightInstance() async {
-    lightAppId = await TDAnalytics.lightInstance();
-  }
-
-  void trackLightEvent() {
-    TDAnalytics.track("light_event", appId: lightAppId);
-  }
-
-  void trackLightUserSet() {
-    TDAnalytics.userSet({"light_name": "mace"}, appId: lightAppId);
+    TDAnalytics.enableThirdPartySharing(
+        TDThirdPartyType.APPS_FLYER |
+            TDThirdPartyType.ADJUST |
+            TDThirdPartyType.BRANCH |
+            TDThirdPartyType.IRON_SOURCE |
+            TDThirdPartyType.TOP_ON |
+            TDThirdPartyType.TRACKING |
+            TDThirdPartyType.TRAD_PLUS,
+        appId: APP_ID);
   }
 }

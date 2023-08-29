@@ -23,7 +23,7 @@ import cn.thinkingdata.android.TDFirstEvent;
 import cn.thinkingdata.android.TDUpdatableEvent;
 import cn.thinkingdata.android.TDOverWritableEvent;
 import cn.thinkingdata.android.encrypt.TDSecreteKey;
-import cn.thinkingdata.android.thirdparty.TDThirdPartyShareType;
+import cn.thinkingdata.thirdparty.TDThirdPartyShareType;
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.common.MethodCall;
@@ -228,9 +228,10 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
 
         if (call.hasArgument("mode")) {
             Integer mode = call.argument("mode");
-            if (null != mode) {
-                config.setModeInt(mode);
+            if (mode == null || mode < 0 || mode > 2) {
+                mode = 0;
             }
+            config.setMode(TDConfig.ModeEnum.values()[mode]);
         }
 
         if(call.hasArgument("lib_version")){

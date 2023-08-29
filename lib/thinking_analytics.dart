@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 
 /// Thinking Analytics instance mode.
 ///
-/// It could be passed to [getInstance] as a parameter to set the native instance mode.
+/// It could be passed to getInstance as a parameter to set the native instance mode.
 enum ThinkingAnalyticsMode {
   /// All data will be cached in device and posted to server according to certain strategies.
   NORMAL,
@@ -19,18 +19,18 @@ enum ThinkingAnalyticsMode {
 
 /// Thinking Analytics Auto Track Type.
 ///
-/// A List of [ThinkingAnalyticsAutoTrackType] can be passed to [enableAutoTrack] to enable auto track.
+/// A List of [ThinkingAnalyticsAutoTrackType] can be passed to enableAutoTrack to enable auto track.
 enum ThinkingAnalyticsAutoTrackType {
-  /// An event named [ta_app_start] will be tracked when your App enter foreground.
+  /// An event named ta_app_start will be tracked when your App enter foreground.
   APP_START,
 
-  /// An event named [ta_app_end] will be tracked when your App enter foreground.
+  /// An event named ta_app_end will be tracked when your App enter foreground.
   APP_END,
 
-  /// An event named [ta_app_install] will be tracked when your App be first opened after installed.
+  /// An event named ta_app_install will be tracked when your App be first opened after installed.
   APP_INSTALL,
 
-  /// An event named [ta_app_crash] will be tracked when there is an uncaught exception.
+  /// An event named ta_app_crash will be tracked when there is an uncaught exception.
   APP_CRASH
 }
 
@@ -174,7 +174,7 @@ class ThinkingAnalyticsAPI {
   static const MethodChannel _channel =
       const MethodChannel('thinkingdata.cn/ThinkingAnalytics');
 
-  static const _libVersion = "2.2.1";
+  static const _libVersion = "3.0.0";
 
   // The APP ID bind to the instance.
   final String _appId;
@@ -410,6 +410,7 @@ class ThinkingAnalyticsAPI {
         <String, dynamic>{'properties': properties, 'appId': this._appId});
   }
 
+  /// The element appended to the library needs to be done to remove the processing,and then import.
   void userUniqAppend(Map<String, List> properties) {
     properties.updateAll((String k, List v) {
       return v.map((e) => e is DateTime ? _formatDateString(e) : e).toList();
@@ -556,6 +557,7 @@ class ThinkingAnalyticsAPI {
         <String, dynamic>{'enabled': enabled, 'appId': this._appId});
   }
 
+  /// Enable three-party data synchronization.
   void enableThirdPartySharing([dynamic type, params]) {
     if (type is List) {
       _channel.invokeMethod('enableThirdPartySharing', <String, dynamic>{
@@ -571,6 +573,8 @@ class ThinkingAnalyticsAPI {
     }
   }
 
+  ///Switch reporting status
+  /// PAUSE STOP SAVE_ONLY NORMAL
   void setTrackStatus(TATrackStatus status) {
     _channel.invokeMethod('setTrackStatus',
         <String, dynamic>{'status': status.index, 'appId': this._appId});
