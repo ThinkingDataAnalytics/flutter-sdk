@@ -4,7 +4,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'thinking_analytics'
-  s.version          = '3.0.2'
+  s.version          = '3.0.3'
   s.summary          = 'Thinking Analytics Flutter plugin'
   s.description      = <<-DESC
 Official Thinking Analytics Flutter plugin. Used to tracking events and user data to Thinking Analytics.

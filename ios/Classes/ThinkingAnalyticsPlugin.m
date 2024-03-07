@@ -123,7 +123,7 @@
         NSString *distinctId = [TDAnalytics getDistinctIdWithAppId:[arguments objectForKey:@"appId"]];
         result(distinctId);
     } else if ([@"getDeviceId" isEqualToString:call.method]) {
-        NSString *deviceId = [TDAnalytics getDistinctIdWithAppId:[arguments objectForKey:@"appId"]];
+        NSString *deviceId = [TDAnalytics getDeviceId];
         result(deviceId);
     } else if ([@"timeEvent" isEqualToString:call.method]) {
         [TDAnalytics timeEvent:[arguments objectForKey:@"eventName"] withAppId:[arguments objectForKey:@"appId"]];
