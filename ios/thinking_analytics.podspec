@@ -4,7 +4,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'thinking_analytics'
-  s.version          = '3.0.1'
+  s.version          = '3.0.2'
   s.summary          = 'Thinking Analytics Flutter plugin'
   s.description      = <<-DESC
 Official Thinking Analytics Flutter plugin. Used to tracking events and user data to Thinking Analytics.
@@ -17,7 +17,7 @@ Official Thinking Analytics Flutter plugin. Used to tracking events and user dat
   s.source_files = 'Classes/**/*'
   s.public_header_files = 'Classes/**/*.h'
   s.dependency 'Flutter'
-  s.dependency 'ThinkingSDK', '3.0.0'
+  s.dependency 'ThinkingSDK', '3.0.1-beta.2'
   s.dependency 'TAThirdParty', '0.2.0'
   s.platform = :ios, '8.0'
 
