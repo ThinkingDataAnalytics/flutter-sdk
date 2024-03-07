@@ -25,7 +25,7 @@ class _MyAppState extends State<MyApp> {
     TDConfig config = TDConfig();
     config.appId = "40eddce753cd4bef9883a01e168c3df0";
     config.serverUrl = "https://receiver-ta-preview.thinkingdata.cn";
-    // config.setMode(TDMode.DEBUG);
+    config.setMode(TDMode.NORMAL);
     config.enableEncrypt(1,
         "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAti6FnWGv7Lggzg\\/R8hQa\\n4GEtd2ucfntqo6Xkf1sPwCIfndr2u6KGPhWQ24bFUKgtNLDuKnUAg1C\\/OEEL8uON\\nJBdbX9XpckO67tRPSPrY3ufNIxsCJ9td557XxUsnebkOZ+oC1Duk8\\/ENx1pRvU6S\\n4c+UYd6PH8wxw1agD61oJ0ju3CW0aZNZ2xKcWBcIU9KgYTeUtawrmGU5flod88Cq\\nZc8VKB1+nY0tav023jvxwkM3zgQ6vBWIU9\\/aViGECB98YEzJfZjcOTD6zvqsZc\\/W\\nRnUNhBHFPGEwc8ueMvzZNI+FP0pUFLVRwVoYbj\\/tffKbxGExaRFIcgP73BIW6\\/6n\\nQwIDAQAB");
     TDAnalytics.initWithConfig(config);
@@ -412,7 +412,8 @@ class _MyAppState extends State<MyApp> {
 
   ///自动采集+参数
   void enableAutoTrackAndProperties() {
-    TDAnalytics.enableAutoTrack(TDAutoTrackEventType.APP_START,
+    TDAnalytics.enableAutoTrack(
+        TDAutoTrackEventType.APP_START | TDAutoTrackEventType.APP_END,
         autoTrackEventProperties: {"auto_name": "jack", "auto_age": 19});
   }
 
@@ -431,6 +432,17 @@ class _MyAppState extends State<MyApp> {
       'PROP_BOOL': false,
       'PROP_STRING': 'flutter test',
     });
+    // TDAnalytics.track("test_event_111",
+    //     properties: {
+    //       'PROP_INT': 5678,
+    //       'PROP_DOUBLE': 12.3,
+    //       'PROP_DATE': DateTime.now().toUtc(),
+    //       'PROP_LIST': ['apple', 'ball', 1234],
+    //       'PROP_BOOL': false,
+    //       'PROP_STRING': 'flutter test',
+    //     },
+    //     dateTime: DateTime.fromMillisecondsSinceEpoch(1688019937000),
+    //     timeZone: "GMT+00:00");
   }
 
   ///发送首次事件
@@ -518,7 +530,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   void setSuperProperties() {
-    TDAnalytics.setSuperProperties({'vip_level': 2, "super_leve": 99});
+    TDAnalytics.setSuperProperties({'vip_level': 21, "super_level": 991});
   }
 
   void setDynamicProperties() {
@@ -548,7 +560,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   void login() {
-    TDAnalytics.login("llb_123");
+    TDAnalytics.login("llb_1234");
     TDAnalytics.track("sign_up");
   }
 
@@ -587,7 +599,8 @@ class _MyAppState extends State<MyApp> {
         TDThirdPartyType.IRON_SOURCE |
         TDThirdPartyType.TOP_ON |
         TDThirdPartyType.TRACKING |
-        TDThirdPartyType.TRAD_PLUS);
+        TDThirdPartyType.TRAD_PLUS |
+        TDThirdPartyType.APPLOVIN_IMPRESSION);
   }
 
   String? lightAppId;

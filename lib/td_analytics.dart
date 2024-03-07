@@ -140,6 +140,9 @@ class TDThirdPartyType {
 
   /// Trad plus
   static const int TRAD_PLUS = 1 << 6;
+
+  /// AppLovinSdk Impression
+  static const int APPLOVIN_IMPRESSION = 1 << 8;
 }
 
 /// The packaging class of ThinkingAnalyticsSDK provides static methods, which is more convenient for customers to use
@@ -265,24 +268,8 @@ class TDAnalytics {
   static void enableAutoTrack(int autoTrackEventType,
       {Map<String, dynamic>? autoTrackEventProperties, String? appId}) {
     ThinkingAnalyticsAPI? instance = _getInstanceByAppId(appId);
-    List<ThinkingAnalyticsAutoTrackType> autoTrackTypes = [];
-    if (autoTrackEventType & TDAutoTrackEventType.APP_START > 0) {
-      autoTrackTypes.add(ThinkingAnalyticsAutoTrackType.APP_START);
-    }
-    if (autoTrackEventType & TDAutoTrackEventType.APP_END > 0) {
-      autoTrackTypes.add(ThinkingAnalyticsAutoTrackType.APP_END);
-    }
-    if (autoTrackEventType & TDAutoTrackEventType.APP_CRASH > 0) {
-      autoTrackTypes.add(ThinkingAnalyticsAutoTrackType.APP_CRASH);
-    }
-    if (autoTrackEventType & TDAutoTrackEventType.APP_INSTALL > 0) {
-      autoTrackTypes.add(ThinkingAnalyticsAutoTrackType.APP_INSTALL);
-    }
-    if (null != autoTrackEventProperties) {
-      instance?.setAutoTrackProperties(
-          autoTrackTypes, autoTrackEventProperties);
-    }
-    instance?.enableAutoTrack(autoTrackTypes);
+    instance?.enableAutoTrackWithProperties(
+        autoTrackEventType, autoTrackEventProperties);
   }
 
   /// Record the event duration, call this method to start the timing, stop the timing when the target event is uploaded, and add the attribute #duration to the event properties, in seconds.
@@ -428,17 +415,17 @@ class TDAnalytics {
   /// [loginId] account id
   ///
   /// [appId] It is used in multi-instance scenarios. If there is only one instance, it is recommended not to pass
-  static void login(String loginId, {String? appId}) {
+  static Future<void> login(String loginId, {String? appId}) async {
     ThinkingAnalyticsAPI? instance = _getInstanceByAppId(appId);
-    instance?.login(loginId);
+    await instance?.login(loginId);
   }
 
   /// Clearing the account ID will not upload user logout events.
   ///
   /// [appId] It is used in multi-instance scenarios. If there is only one instance, it is recommended not to pass
-  static void logout({String? appId}) {
+  static Future<void> logout({String? appId}) async {
     ThinkingAnalyticsAPI? instance = _getInstanceByAppId(appId);
-    instance?.logout();
+    await instance?.logout();
   }
 
   /// Set the distinct ID to replace the default UUID distinct ID.
@@ -529,6 +516,9 @@ class TDAnalytics {
     }
     if (type & TDThirdPartyType.TRAD_PLUS > 0) {
       thirdTypes.add(TAThirdPartyShareType.TA_TRAD_PLUS);
+    }
+    if (type & TDThirdPartyType.APPLOVIN_IMPRESSION > 0) {
+      thirdTypes.add(TAThirdPartyShareType.TA_APPLOVIN_IMPRESSION);
     }
     instance?.enableThirdPartySharing(thirdTypes, extras);
   }

@@ -1,6 +1,6 @@
 #import "ThinkingAnalyticsPlugin.h"
-#import <ThinkingSDK/ThinkingAnalyticsSDK.h>
-
+//#import <ThinkingSDK/ThinkingAnalyticsSDK.h>
+#import <ThinkingSDK/ThinkingSDK.h>
 @interface ThinkingAnalyticsPlugin ()
 
 @property (nonatomic, strong) NSMutableDictionary *lightInstanceDic;
@@ -19,34 +19,28 @@
 
 - (void)handleMethodCall:(FlutterMethodCall*)call result:(FlutterResult)result {
     NSDictionary* arguments = (NSDictionary *)call.arguments;
-    
     if ([@"getInstance" isEqualToString:call.method]) {
         TDConfig *config = [[TDConfig alloc] init];
         if ([arguments objectForKey:@"timeZone"]) {
             config.defaultTimeZone = [NSTimeZone timeZoneWithName:[arguments objectForKey:@"timeZone"]];
         }
         if ([[arguments objectForKey:@"mode"] intValue] == 1) {
-            config.debugMode = ThinkingAnalyticsDebug;
+            config.mode = TDModeDebug;
         } else if ([[arguments objectForKey:@"mode"] intValue] == 2) {
-            config.debugMode = ThinkingAnalyticsDebugOnly;
-        }
-        if([arguments objectForKey:@"enableEncrypt"]){
-            NSNumber* enableEncrypt = [arguments objectForKey:@"enableEncrypt"];
-            config.enableEncrypt = enableEncrypt.boolValue;
+            config.mode = TDModeDebugOnly;
         }
         if([arguments objectForKey:@"secretKey"]){
             NSDictionary *secretKey = (NSDictionary *)[arguments objectForKey:@"secretKey"];
             NSNumber* keyVersion = [secretKey objectForKey:@"version"];
-            config.secretKey = [[TDSecretKey alloc] initWithVersion:keyVersion.intValue publicKey:[secretKey objectForKey:@"publicKey"] asymmetricEncryption:[secretKey objectForKey:@"asymmetricEncryption"] symmetricEncryption:[secretKey objectForKey:@"symmetricEncryption"]];
+            [config enableEncryptWithVersion:keyVersion.intValue publicKey:[secretKey objectForKey:@"publicKey"]];
         }
-        NSString *appId = [arguments objectForKey:@"appId"];
-        NSString *serverUrl = [arguments objectForKey:@"serverUrl"];
+        config.appid = [arguments objectForKey:@"appId"];
+        config.serverUrl = [arguments objectForKey:@"serverUrl"];
         NSString *version = [arguments objectForKey:@"lib_version"];
-        [ThinkingAnalyticsSDK startWithAppId:appId
-                                     withUrl:serverUrl
-                                  withConfig:config];
         
-        [ThinkingAnalyticsSDK setCustomerLibInfoWithLibName:@"Flutter" libVersion:version];
+        [TDAnalytics startAnalyticsWithConfig:config];
+        
+        [TDAnalytics setCustomerLibInfoWithLibName:@"Flutter" libVersion:version];
         
         result(nil);
     } else if ([@"track" isEqualToString:call.method]) {
@@ -75,185 +69,192 @@
             NSTimeZone *timeZone = [NSTimeZone timeZoneWithName:[arguments objectForKey:@"timeZone"]];
             [eventModel configTime:time timeZone:timeZone];
         }
-        [[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] trackWithEventModel:eventModel];
+        [TDAnalytics trackWithEventModel:eventModel withAppId:[arguments objectForKey:@"appId"]];
         result(nil);
     } else if ([@"identify" isEqualToString:call.method]) {
-        [[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] identify:[arguments objectForKey:@"distinctId"]];
+        [TDAnalytics setDistinctId:[arguments objectForKey:@"distinctId"] withAppId:[arguments objectForKey:@"appId"]];
         result(nil);
     } else if ([@"login" isEqualToString:call.method]) {
-        [[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] login:[arguments objectForKey:@"accountId"]];
+        [TDAnalytics login:[arguments objectForKey:@"accountId"] withAppId:[arguments objectForKey:@"appId"]];
         result(nil);
     } else if ([@"logout" isEqualToString:call.method]) {
-        [[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] logout];
+        [TDAnalytics logoutWithAppId:[arguments objectForKey:@"appId"]];
         result(nil);
     } else if ([@"userSet" isEqualToString:call.method]) {
-        [[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] user_set:[arguments objectForKey:@"properties"]];
+        [TDAnalytics userSet:[arguments objectForKey:@"properties"] withAppId:[arguments objectForKey:@"appId"]];
         result(nil);
     } else if ([@"userSetOnce" isEqualToString:call.method]) {
-        [[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] user_setOnce:[arguments objectForKey:@"properties"]];
+        [TDAnalytics userSetOnce:[arguments objectForKey:@"properties"] withAppId:[arguments objectForKey:@"appId"]];
         result(nil);
     } else if ([@"userAdd" isEqualToString:call.method]) {
-        [[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] user_add:[arguments objectForKey:@"properties"]];
+        [TDAnalytics userAdd:[arguments objectForKey:@"properties"] withAppId:[arguments objectForKey:@"appId"]];
         result(nil);
     } else if ([@"userAppend" isEqualToString:call.method]) {
-        [[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] user_append:[arguments objectForKey:@"properties"]];
+        [TDAnalytics userAppend:[arguments objectForKey:@"properties"] withAppId:[arguments objectForKey:@"appId"]];
         result(nil);
     }else if ([@"userUniqAppend" isEqualToString:call.method]){
-        [[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] user_uniqAppend:[arguments objectForKey:@"properties"]];
+        [TDAnalytics userUniqAppend:[arguments objectForKey:@"properties"] withAppId:[arguments objectForKey:@"appId"]];
         result(nil);
     }else if ([@"userUnset" isEqualToString:call.method]) {
-        [[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] user_unset:[arguments objectForKey:@"property"]];
+        [TDAnalytics userUnset:[arguments objectForKey:@"property"] withAppId:[arguments objectForKey:@"appId"]];
         result(nil);
     } else if ([@"userDelete" isEqualToString:call.method]) {
-        [[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] user_delete];
+        [TDAnalytics userDeleteWithAppId:[arguments objectForKey:@"appId"]];
         result(nil);
     } else if ([@"setSuperProperties" isEqualToString:call.method]) {
-        [[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] setSuperProperties:[arguments objectForKey:@"properties"]];
+        [TDAnalytics setSuperProperties:[arguments objectForKey:@"properties"] withAppId:[arguments objectForKey:@"appId"]];
         result(nil);
     } else if ([@"getSuperProperties" isEqualToString:call.method]) {
-        NSDictionary *superProperties = [[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] currentSuperProperties];
+        NSDictionary *superProperties = [TDAnalytics getSuperPropertiesWithAppId:[arguments objectForKey:@"appId"]];
         result(superProperties);
     } else if ([@"unsetSuperProperty" isEqualToString:call.method]) {
-        [[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] unsetSuperProperty:[arguments objectForKey:@"property"]];
+        [TDAnalytics unsetSuperProperty:[arguments objectForKey:@"property"] withAppId:[arguments objectForKey:@"appId"]];
         result(nil);
     } else if ([@"clearSuperProperties" isEqualToString:call.method]) {
-        [[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] clearSuperProperties];
+        [TDAnalytics clearSuperPropertiesWithAppId:[arguments objectForKey:@"appId"]];
         result(nil);
     } else if ([@"getPresetProperties" isEqualToString:call.method]) {
-        NSDictionary *presetProperties = [[[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] getPresetProperties] toEventPresetProperties];
+        NSDictionary *presetProperties = [[TDAnalytics getPresetPropertiesWithAppId:[arguments objectForKey:@"appId"]] toEventPresetProperties];
         result(presetProperties);
     } else if ([@"flush" isEqualToString:call.method]) {
-        [[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] flush];
+        [TDAnalytics flushWithAppId:[arguments objectForKey:@"appId"]];
         result(nil);
     } else if ([@"getDistinctId" isEqualToString:call.method]) {
-        NSString *distinctId = [[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] getDistinctId];
+        NSString *distinctId = [TDAnalytics getDistinctIdWithAppId:[arguments objectForKey:@"appId"]];
         result(distinctId);
     } else if ([@"getDeviceId" isEqualToString:call.method]) {
-        NSString *deviceId = [[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] getDeviceId];
+        NSString *deviceId = [TDAnalytics getDistinctIdWithAppId:[arguments objectForKey:@"appId"]];
         result(deviceId);
     } else if ([@"timeEvent" isEqualToString:call.method]) {
-        [[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] timeEvent:[arguments objectForKey:@"eventName"]];
+        [TDAnalytics timeEvent:[arguments objectForKey:@"eventName"] withAppId:[arguments objectForKey:@"appId"]];
         result(nil);
     } else if ([@"optOutTracking" isEqualToString:call.method]) {
-        if ([arguments objectForKey:@"deleteUser"]) {
-            [[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] optOutTrackingAndDeleteUser];
-        } else {
-            [[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] optOutTracking];
-        }
+        [TDAnalytics setTrackStatus:TDTrackStatusStop];
         result(nil);
     } else if ([@"optInTracking" isEqualToString:call.method]) {
-        [[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] optInTracking];
+        [TDAnalytics setTrackStatus:TDTrackStatusNormal];
         result(nil);
     } else if ([@"enableTracking" isEqualToString:call.method]) {
-        [[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] enableTracking:[arguments objectForKey:@"enabled"]];
+        if([arguments objectForKey:@"enabled"]){
+            [TDAnalytics setTrackStatus:TDTrackStatusNormal];
+        }else{
+            [TDAnalytics setTrackStatus:TDTrackStatusPause];
+        }
         result(nil);
     } else if ([@"createLightInstance" isEqualToString:call.method]) {
-        ThinkingAnalyticsSDK *lightInstance = [[ThinkingAnalyticsSDK sharedInstanceWithAppid:[arguments objectForKey:@"appId"]] createLightInstance];
-        NSString *uuid = [[NSUUID UUID] UUIDString];
-        if (!self.lightInstanceDic) {
-            self.lightInstanceDic = [NSMutableDictionary dictionary];
-        }
-        [self.lightInstanceDic setValue:lightInstance forKey:uuid];
+//        ThinkingAnalyticsSDK *lightInstance = [[ThinkingAnalyticsSDK sharedInstanceWithAppid:[arguments objectForKey:@"appId"]] createLightInstance];
+//        NSString *uuid = [[NSUUID UUID] UUIDString];
+//        if (!self.lightInstanceDic) {
+//            self.lightInstanceDic = [NSMutableDictionary dictionary];
+//        }
+//        [self.lightInstanceDic setValue:lightInstance forKey:uuid];
+        NSString *uuid = [TDAnalytics lightInstanceIdWithAppId:[arguments objectForKey:@"appId"]];
         result(uuid);
     } else if ([@"enableLog" isEqualToString:call.method]) {
-        [ThinkingAnalyticsSDK setLogLevel:TDLoggingLevelDebug];
+        [TDAnalytics enableLog:true];
         result(nil);
     } else if ([@"enableAutoTrack" isEqualToString:call.method]) {
         if ([arguments objectForKey:@"types"]) {
             NSArray *autoTrackTypes = [arguments objectForKey:@"types"];
-            ThinkingAnalyticsAutoTrackEventType iOSAutoTrackType = ThinkingAnalyticsEventTypeNone;
+            TDAutoTrackEventType iOSAutoTrackType = TDAutoTrackEventTypeNone;
             for(int i=0; i < autoTrackTypes.count; i++) {
                 NSNumber* value = autoTrackTypes[i];
                 if (value.intValue == 0) {
-                    iOSAutoTrackType |= ThinkingAnalyticsEventTypeAppStart;
+                    iOSAutoTrackType |= TDAutoTrackEventTypeAppStart;
                 } else if (value.intValue == 1) {
-                    iOSAutoTrackType |= ThinkingAnalyticsEventTypeAppEnd;
+                    iOSAutoTrackType |= TDAutoTrackEventTypeAppEnd;
                 } else if (value.intValue == 2) {
-                    iOSAutoTrackType |= ThinkingAnalyticsEventTypeAppInstall;
+                    iOSAutoTrackType |= TDAutoTrackEventTypeAppInstall;
                 } else if (value.intValue == 3) {
-                    iOSAutoTrackType |= ThinkingAnalyticsEventTypeAppViewCrash;
+                    iOSAutoTrackType |= TDAutoTrackEventTypeAppViewCrash;
                 }
             }
-            [[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] enableAutoTrack:iOSAutoTrackType];
+            [TDAnalytics enableAutoTrack:iOSAutoTrackType withAppId:[arguments objectForKey:@"appId"]];
         }
         result(nil);
+    }else if([@"enableAutoTrackWithProperties" isEqualToString:call.method]){
+        if ([arguments objectForKey:@"types"]) {
+            NSInteger autoTrackTypes = [[arguments objectForKey:@"types"]intValue];
+            NSDictionary* autoProperties = [arguments objectForKey:@"properties"];
+            [TDAnalytics enableAutoTrack:autoTrackTypes properties:autoProperties withAppId:[arguments objectForKey:@"appId"]];
+        }
     }else if([@"setAutoTrackProperties" isEqualToString:call.method]){
         NSArray *autoTrackTypes = [arguments objectForKey:@"types"];
-        ThinkingAnalyticsAutoTrackEventType iOSAutoTrackType = ThinkingAnalyticsEventTypeNone;
+        TDAutoTrackEventType iOSAutoTrackType = TDAutoTrackEventTypeNone;
         NSDictionary* autoProperties = [arguments objectForKey:@"properties"];
         for(int i=0; i < autoTrackTypes.count; i++) {
             NSNumber* value = autoTrackTypes[i];
             if (value.intValue == 0) {
-                iOSAutoTrackType |= ThinkingAnalyticsEventTypeAppStart;
+                iOSAutoTrackType |= TDAutoTrackEventTypeAppStart;
             } else if (value.intValue == 1) {
-                iOSAutoTrackType |= ThinkingAnalyticsEventTypeAppEnd;
+                iOSAutoTrackType |= TDAutoTrackEventTypeAppEnd;
             } else if (value.intValue == 2) {
-                iOSAutoTrackType |= ThinkingAnalyticsEventTypeAppInstall;
+                iOSAutoTrackType |= TDAutoTrackEventTypeAppInstall;
             } else if (value.intValue == 3) {
-                iOSAutoTrackType |= ThinkingAnalyticsEventTypeAppViewCrash;
+                iOSAutoTrackType |= TDAutoTrackEventTypeAppViewCrash;
             }
         }
-        [[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] setAutoTrackProperties:iOSAutoTrackType properties:autoProperties];
+        [TDAnalytics setAutoTrackProperties:iOSAutoTrackType properties:autoProperties withAppId:[arguments objectForKey:@"appId"]];
     }else if ([@"calibrateTime" isEqualToString:call.method]) {
-        [ThinkingAnalyticsSDK calibrateTime:[[arguments objectForKey:@"timestamp"] doubleValue]];
+        [TDAnalytics calibrateTime:[[arguments objectForKey:@"timestamp"] doubleValue]];
     } else if ([@"calibrateTimeWithNtp" isEqualToString:call.method]) {
-        [ThinkingAnalyticsSDK calibrateTimeWithNtp:[arguments objectForKey:@"ntpServer"]];
+        [TDAnalytics calibrateTimeWithNtp:[arguments objectForKey:@"ntpServer"]];
     }else if ([@"setTrackStatus" isEqualToString:call.method]){
         if([arguments objectForKey:@"status"]){
             NSNumber *status = [arguments objectForKey:@"status"];
             if(status.intValue == 0){
-                [[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] setTrackStatus: TATrackStatusPause];
+                [TDAnalytics setTrackStatus:TDTrackStatusPause];
             }else if(status.intValue == 1){
-                [[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] setTrackStatus: TATrackStatusStop];
+                [TDAnalytics setTrackStatus:TDTrackStatusStop];
             }else if(status.intValue == 2){
-                [[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] setTrackStatus: TATrackStatusSaveOnly];
+                [TDAnalytics setTrackStatus:TDTrackStatusSaveOnly];
             }else if(status.intValue == 3){
-                [[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] setTrackStatus: TATrackStatusNormal];
+                [TDAnalytics setTrackStatus:TDTrackStatusNormal];
             }
         }
     }else if([@"enableThirdPartySharing" isEqualToString:call.method]){
         if([arguments objectForKey:@"types"]){
             NSArray *shareTypes = [arguments objectForKey:@"types"];
-            TAThirdPartyShareType types = TDThirdPartyShareTypeNONE;
+            TDThirdPartyType types = TDThirdPartyTypeNone;
             for(int i = 0;i<shareTypes.count;i++){
                 NSNumber* value = shareTypes[i];
                 if(value.intValue == 0){
-                    types |= TDThirdPartyShareTypeAPPSFLYER;
+                    types |= TDThirdPartyTypeAppsFlyer;
                 }else if(value.intValue == 1){
-                    types |= TDThirdPartyShareTypeIRONSOURCE;
+                    types |= TDThirdPartyTypeIronSource;
                 }else if(value.intValue == 2){
-                    types |= TDThirdPartyShareTypeADJUST;
+                    types |= TDThirdPartyTypeAdjust;
                 }else if(value.intValue == 3){
-                    types |= TDThirdPartyShareTypeBRANCH;
+                    types |= TDThirdPartyTypeBranch;
                 }else if(value.intValue == 4){
-                    types |= TDThirdPartyShareTypeTOPON;
+                    types |= TDThirdPartyTypeTopOn;
                 }else if(value.intValue == 5){
-                    types |= TDThirdPartyShareTypeTRACKING;
+                    types |= TDThirdPartyTypeTracking;
                 }else if(value.intValue == 6){
-                    types |= TDThirdPartyShareTypeTRADPLUS;
+                    types |= TDThirdPartyTypeTradPlus;
                 }
             }
-            [[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] enableThirdPartySharing:types];
+            [TDAnalytics enableThirdPartySharing:types withAppId:[arguments objectForKey:@"appId"]];
         }else if([arguments objectForKey:@"type"]){
             NSNumber* type = [arguments objectForKey:@"type"];
             NSDictionary* params = [arguments objectForKey:@"params"];
-            TAThirdPartyShareType t = TDThirdPartyShareTypeNONE;
+            TDThirdPartyType t = TDThirdPartyTypeNone;
             if(type.intValue == 0){
-                t = TDThirdPartyShareTypeAPPSFLYER;
+                t = TDThirdPartyTypeAppsFlyer;
             }else if(type.intValue == 1){
-                t = TDThirdPartyShareTypeIRONSOURCE;
+                t = TDThirdPartyTypeIronSource;
             }else if(type.intValue == 2){
-                t = TDThirdPartyShareTypeADJUST;
+                t = TDThirdPartyTypeAdjust;
             }else if(type.intValue == 3){
-                t = TDThirdPartyShareTypeBRANCH;
+                t = TDThirdPartyTypeBranch;
             }else if(type.intValue == 4){
-                t = TDThirdPartyShareTypeTOPON;
+                t = TDThirdPartyTypeTopOn;
             }else if(type.intValue == 5){
-                t = TDThirdPartyShareTypeTRACKING;
+                t = TDThirdPartyTypeTracking;
             }else if(type.intValue == 6){
-                t = TDThirdPartyShareTypeTRADPLUS;
+                t = TDThirdPartyTypeTradPlus;
             }
-            [[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] enableThirdPartySharing:t customMap:params];
+            [TDAnalytics enableThirdPartySharing:t properties:params withAppId:[arguments objectForKey:@"appId"]];
         }
     }else {
         result(FlutterMethodNotImplemented);
@@ -262,25 +263,21 @@
 
 - (void)track:(NSDictionary*)arguments {
     NSTimeZone *timezone = [arguments objectForKey:@"timeZone"] ? [NSTimeZone timeZoneWithName:[arguments objectForKey:@"timeZone"]] : nil;
-    if ([arguments objectForKey:@"timestamp"]) {
+    if (timezone && [arguments objectForKey:@"timestamp"]) {
         NSDate *date = [NSDate dateWithTimeIntervalSince1970:[[arguments objectForKey:@"timestamp"] doubleValue] / 1000];
-        if (timezone) {
-            [[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] track:[arguments objectForKey:@"eventName"] properties:[arguments objectForKey:@"properties"] time:date timeZone:timezone];
-        } else {
-            [[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] track:[arguments objectForKey:@"eventName"] properties:[arguments objectForKey:@"properties"] time:date];
-        }
+        [TDAnalytics track:[arguments objectForKey:@"eventName"] properties:[arguments objectForKey:@"properties"] time:date timeZone:timezone withAppId:[arguments objectForKey:@"appId"]];
     } else {
-        [[self getThinkingAnalyticsSDK:[arguments objectForKey:@"appId"]] track:[arguments objectForKey:@"eventName"] properties:[arguments objectForKey:@"properties"]];
+        [TDAnalytics track:[arguments objectForKey:@"eventName"] properties:[arguments objectForKey:@"properties"] withAppId:[arguments objectForKey:@"appId"]];
     }
 }
 
-- (ThinkingAnalyticsSDK *)getThinkingAnalyticsSDK:(NSString *)appid {
-    @synchronized (self.lightInstanceDic) {
-        if ([self.lightInstanceDic objectForKey:appid]) {
-            return [self.lightInstanceDic objectForKey:appid];
-        }
-    }
-    return [ThinkingAnalyticsSDK sharedInstanceWithAppid:appid];
-}
+//- (ThinkingAnalyticsSDK *)getThinkingAnalyticsSDK:(NSString *)appid {
+//    @synchronized (self.lightInstanceDic) {
+//        if ([self.lightInstanceDic objectForKey:appid]) {
+//            return [self.lightInstanceDic objectForKey:appid];
+//        }
+//    }
+//    return [ThinkingAnalyticsSDK sharedInstanceWithAppid:appid];
+//}
 
 @end

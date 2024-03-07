@@ -17,13 +17,14 @@ import java.util.Map;
 import java.util.TimeZone;
 import java.util.Iterator;
 
-import cn.thinkingdata.android.TDConfig;
-import cn.thinkingdata.android.ThinkingAnalyticsSDK;
-import cn.thinkingdata.android.TDFirstEvent;
-import cn.thinkingdata.android.TDUpdatableEvent;
-import cn.thinkingdata.android.TDOverWritableEvent;
-import cn.thinkingdata.android.encrypt.TDSecreteKey;
-import cn.thinkingdata.thirdparty.TDThirdPartyShareType;
+import cn.thinkingdata.analytics.TDAnalytics;
+import cn.thinkingdata.analytics.TDAnalyticsAPI;
+import cn.thinkingdata.analytics.TDConfig;
+import cn.thinkingdata.analytics.ThinkingAnalyticsSDK;
+import cn.thinkingdata.analytics.model.TDFirstEventModel;
+import cn.thinkingdata.analytics.model.TDOverWritableEventModel;
+import cn.thinkingdata.analytics.model.TDUpdatableEventModel;
+import cn.thinkingdata.thirdparty.TDThirdPartyType;
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.common.MethodCall;
@@ -64,7 +65,7 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
         String appId = call.argument("appId");
         if (TextUtils.isEmpty(appId)) {
             if (call.method.equals("enableLog")) {
-                ThinkingAnalyticsSDK.enableTrackLog(true);
+                TDAnalytics.enableLog(true);
                 result.success(null);
                 return;
             }
@@ -72,7 +73,7 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
             if (call.method.equals("calibrateTime")) {
                 Long timestamp = call.argument("timestamp");
                 if (null != timestamp) {
-                    ThinkingAnalyticsSDK.calibrateTime(timestamp);
+                    TDAnalytics.calibrateTime(timestamp);
                 }
                 result.success(null);
                 return;
@@ -80,7 +81,7 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
 
             if (call.method.equals("calibrateTimeWithNtp")) {
                 String ntpServer = call.argument("ntpServer");
-                ThinkingAnalyticsSDK.calibrateTimeWithNtp(ntpServer);
+                TDAnalytics.calibrateTimeWithNtp(ntpServer);
                 result.success(null);
                 return;
             }
@@ -97,14 +98,14 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
                 login(call, result, appId);
                 break;
             case "logout":
-                getThinkingAnalyticsSDK(appId).logout();
+                TDAnalyticsAPI.logout(appId);
                 result.success(null);
                 break;
             case "identify":
                 identify(call, result, appId);
                 break;
             case "getDistinctId":
-                String distinctId = getThinkingAnalyticsSDK(appId).getDistinctId();
+                String distinctId = TDAnalyticsAPI.getDistinctId(appId);
                 result.success(distinctId);
                 break;
             case "track":
@@ -135,7 +136,7 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
                 userUnset(call, result, appId);
                 break;
             case "userDelete":
-                getThinkingAnalyticsSDK(appId).user_delete();
+                TDAnalyticsAPI.userDelete(appId);
                 result.success(null);
                 break;
             case "setSuperProperties":
@@ -145,40 +146,37 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
                 getSuperProperties(result, appId);
                 break;
             case "unsetSuperProperty":
-                getThinkingAnalyticsSDK(appId).unsetSuperProperty((String)call.argument("property"));
+                TDAnalyticsAPI.unsetSuperProperty((String)call.argument("property"),appId);
                 result.success(null);
                 break;
             case "clearSuperProperties":
-                getThinkingAnalyticsSDK(appId).clearSuperProperties();
+                TDAnalyticsAPI.clearSuperProperties(appId);
                 result.success(null);
                 break;
             case "getPresetProperties":
                 getPresetProperties(result, appId);
                 break;
             case "getDeviceId":
-                result.success(getThinkingAnalyticsSDK(appId).getDeviceId());
+                result.success(TDAnalyticsAPI.getDeviceId(appId));
                 break;
             case "flush":
-                getThinkingAnalyticsSDK(appId).flush();
+                TDAnalyticsAPI.flush(appId);
                 result.success(null);
                 break;
             case "optOutTracking":
-                Boolean deleteUser = call.argument("deleteUser");
-                if (deleteUser != null && deleteUser) {
-                    getThinkingAnalyticsSDK(appId).optOutTrackingAndDeleteUser();
-                } else {
-                    getThinkingAnalyticsSDK(appId).optOutTracking();
-                }
+                TDAnalyticsAPI.setTrackStatus(TDAnalytics.TDTrackStatus.STOP,appId);
                 result.success(null);
                 break;
             case "optInTracking":
-                getThinkingAnalyticsSDK(appId).optInTracking();
+                TDAnalyticsAPI.setTrackStatus(TDAnalytics.TDTrackStatus.NORMAL,appId);
                 result.success(null);
                 break;
             case "enableTracking":
-                Boolean enabled =  call.argument("enabled");
-                if (enabled != null) {
-                    getThinkingAnalyticsSDK(appId).enableTracking(enabled);
+                Boolean enabled = call.argument("enabled");
+                if (enabled != null && enabled) {
+                    TDAnalyticsAPI.setTrackStatus(TDAnalytics.TDTrackStatus.NORMAL, appId);
+                } else {
+                    TDAnalyticsAPI.setTrackStatus(TDAnalytics.TDTrackStatus.PAUSE, appId);
                 }
                 result.success(null);
                 break;
@@ -187,6 +185,9 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
                 break;
             case "enableAutoTrack":
                 enableAutoTrack(call, result, appId);
+                break;
+            case "enableAutoTrackWithProperties":
+                enableAutoTrackWithProperties(call, result, appId);
                 break;
             case "setAutoTrackProperties":
                 setAutoTrackProperties(call, result, appId);
@@ -231,68 +232,71 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
             if (mode == null || mode < 0 || mode > 2) {
                 mode = 0;
             }
-            config.setMode(TDConfig.ModeEnum.values()[mode]);
+            config.setMode(TDConfig.TDMode.values()[mode]);
         }
 
         if(call.hasArgument("lib_version")){
             String version = call.argument("lib_version");
             if(null != version){
-                ThinkingAnalyticsSDK.setCustomerLibInfo("Flutter", version);
-            }
-        }
-
-        if (call.hasArgument("enableEncrypt")) {
-            Boolean enableEncrypt = call.argument("enableEncrypt");
-            if (null != enableEncrypt) {
-                config.enableEncrypt(enableEncrypt);
+                TDAnalytics.setCustomerLibInfo("Flutter", version);
             }
         }
 
         if (call.hasArgument("secretKey")) {
             Map<String, Object> secretKey = call.argument("secretKey");
             if (secretKey != null) {
-                TDSecreteKey key = new TDSecreteKey();
-                key.publicKey = (String) secretKey.get("publicKey");
-                Integer v = (Integer) secretKey.get("version");
+                String publicKey = ( String ) secretKey.get("publicKey");
+                Integer v = ( Integer ) secretKey.get("version");
                 if (null != v) {
-                    key.version = v;
+                    config.enableEncrypt(v, publicKey);
                 }
-                key.symmetricEncryption = (String) secretKey.get("symmetricEncryption");
-                key.asymmetricEncryption = (String) secretKey.get("asymmetricEncryption");
-                config.setSecretKey(key);
             }
         }
-
-        ThinkingAnalyticsSDK instance = ThinkingAnalyticsSDK.sharedInstance(config);
-        result.success(instance.hashCode());
+        TDAnalytics.init(config);
+        result.success(0);
     }
 
     private void enableAutoTrack(MethodCall call, Result result, String appId) {
         if (call.hasArgument("types")) {
             List<Integer> autoTrack = call.argument("types");
             if (null != autoTrack) {
-                List<ThinkingAnalyticsSDK.AutoTrackEventType> eventTypes = new ArrayList<>();
+                int eventTypes = 0;
                 for (int v : autoTrack) {
                     switch (v) {
                         case 0:
-                            eventTypes.add(ThinkingAnalyticsSDK.AutoTrackEventType.APP_START);
+                            eventTypes = eventTypes | TDAnalytics.TDAutoTrackEventType.APP_START;
                             break;
                         case 1:
-                            eventTypes.add(ThinkingAnalyticsSDK.AutoTrackEventType.APP_END);
+                            eventTypes = eventTypes | TDAnalytics.TDAutoTrackEventType.APP_END;
                             break;
                         case 2:
-                            eventTypes.add(ThinkingAnalyticsSDK.AutoTrackEventType.APP_INSTALL);
+                            eventTypes = eventTypes | TDAnalytics.TDAutoTrackEventType.APP_INSTALL;
                             break;
                         case 3:
-                            eventTypes.add(ThinkingAnalyticsSDK.AutoTrackEventType.APP_CRASH);
+                            eventTypes = eventTypes | TDAnalytics.TDAutoTrackEventType.APP_CRASH;
                             break;
                     }
 
                 }
+                TDAnalyticsAPI.enableAutoTrack(eventTypes,appId);
+            }
+        }
+        result.success(null);
+    }
 
-                if (eventTypes.size() > 0) {
-                    getThinkingAnalyticsSDK(appId).enableAutoTrack(eventTypes);
+    private void enableAutoTrackWithProperties(MethodCall call, Result result, String appId) {
+        if (call.hasArgument("types")) {
+            Integer autoTrack = call.argument("types");
+            Map<String, Object> mapProperties = call.<HashMap<String, Object>>argument("properties");
+            if (autoTrack != null) {
+                JSONObject properties;
+                try {
+                    properties = extractJSONObject(mapProperties == null ? EMPTY_HASH_MAP : mapProperties);
+                } catch (Exception e) {
+                    result.error(e.getClass().getName(), e.toString(), "");
+                    return;
                 }
+                TDAnalyticsAPI.enableAutoTrack(autoTrack,properties,appId);
             }
         }
         result.success(null);
@@ -344,30 +348,33 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
             for (int v : shareTypes) {
                 switch (v) {
                     case 0:
-                        thirdTypes = thirdTypes | TDThirdPartyShareType.TD_APPS_FLYER;
+                        thirdTypes = thirdTypes | TDThirdPartyType.APPS_FLYER;
                         break;
                     case 1:
-                        thirdTypes = thirdTypes | TDThirdPartyShareType.TD_IRON_SOURCE;
+                        thirdTypes = thirdTypes | TDThirdPartyType.IRON_SOURCE;
                         break;
                     case 2:
-                        thirdTypes = thirdTypes | TDThirdPartyShareType.TD_ADJUST;
+                        thirdTypes = thirdTypes | TDThirdPartyType.ADJUST;
                         break;
                     case 3:
-                        thirdTypes = thirdTypes | TDThirdPartyShareType.TD_BRANCH;
+                        thirdTypes = thirdTypes | TDThirdPartyType.BRANCH;
                         break;
                     case 4:
-                        thirdTypes = thirdTypes | TDThirdPartyShareType.TD_TOP_ON;
+                        thirdTypes = thirdTypes | TDThirdPartyType.TOP_ON;
                         break;
                     case 5:
-                        thirdTypes = thirdTypes | TDThirdPartyShareType.TD_TRACKING;
+                        thirdTypes = thirdTypes | TDThirdPartyType.TRACKING;
                         break;
                     case 6:
-                        thirdTypes = thirdTypes | TDThirdPartyShareType.TD_TRAD_PLUS;
+                        thirdTypes = thirdTypes | TDThirdPartyType.TRAD_PLUS;
+                        break;
+                    case 7:
+                        thirdTypes = thirdTypes | TDThirdPartyType.APPLOVIN_IMPRESSION;
                         break;
                 }
 
             }
-            getThinkingAnalyticsSDK(appId).enableThirdPartySharing(thirdTypes);
+            TDAnalyticsAPI.enableThirdPartySharing(thirdTypes,appId);
         } else if (call.hasArgument("type")) {
             Integer type = call.argument("type");
             if (type == null) return;
@@ -375,28 +382,31 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
             int thirdType = 0;
             switch (type) {
                 case 0:
-                    thirdType = TDThirdPartyShareType.TD_APPS_FLYER;
+                    thirdType = TDThirdPartyType.APPS_FLYER;
                     break;
                 case 1:
-                    thirdType = TDThirdPartyShareType.TD_IRON_SOURCE;
+                    thirdType = TDThirdPartyType.IRON_SOURCE;
                     break;
                 case 2:
-                    thirdType = TDThirdPartyShareType.TD_ADJUST;
+                    thirdType = TDThirdPartyType.ADJUST;
                     break;
                 case 3:
-                    thirdType = TDThirdPartyShareType.TD_BRANCH;
+                    thirdType = TDThirdPartyType.BRANCH;
                     break;
                 case 4:
-                    thirdType = TDThirdPartyShareType.TD_TOP_ON;
+                    thirdType = TDThirdPartyType.TOP_ON;
                     break;
                 case 5:
-                    thirdType = TDThirdPartyShareType.TD_TRACKING;
+                    thirdType = TDThirdPartyType.TRACKING;
                     break;
                 case 6:
-                    thirdType = TDThirdPartyShareType.TD_TRAD_PLUS;
+                    thirdType = TDThirdPartyType.TRAD_PLUS;
+                    break;
+                case 7:
+                    thirdType = TDThirdPartyType.APPLOVIN_IMPRESSION;
                     break;
             }
-            getThinkingAnalyticsSDK(appId).enableThirdPartySharing(thirdType, maps);
+            TDAnalyticsAPI.enableThirdPartySharing(thirdType,maps,appId);
         }
     }
 
@@ -405,16 +415,16 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
         if (null == status) return;
         switch (status) {
             case 0:
-                getThinkingAnalyticsSDK(appId).setTrackStatus(ThinkingAnalyticsSDK.TATrackStatus.PAUSE);
+                TDAnalyticsAPI.setTrackStatus(TDAnalytics.TDTrackStatus.PAUSE,appId);
                 break;
             case 1:
-                getThinkingAnalyticsSDK(appId).setTrackStatus(ThinkingAnalyticsSDK.TATrackStatus.STOP);
+                TDAnalyticsAPI.setTrackStatus(TDAnalytics.TDTrackStatus.STOP,appId);
                 break;
             case 2:
-                getThinkingAnalyticsSDK(appId).setTrackStatus(ThinkingAnalyticsSDK.TATrackStatus.SAVE_ONLY);
+                TDAnalyticsAPI.setTrackStatus(TDAnalytics.TDTrackStatus.SAVE_ONLY,appId);
                 break;
             case 3:
-                getThinkingAnalyticsSDK(appId).setTrackStatus(ThinkingAnalyticsSDK.TATrackStatus.NORMAL);
+                TDAnalyticsAPI.setTrackStatus(TDAnalytics.TDTrackStatus.NORMAL,appId);
                 break;
         }
     }
@@ -426,17 +436,17 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
         JSONObject properties;
 
         try {
-            Date date = call.hasArgument("timestamp") ? new Date((long)call.argument("timestamp")) : null;
+            Date date = null;
+            Long timestamp =  call.argument("timestamp");
+            if(null != timestamp){
+                date = new Date(timestamp);
+            }
             TimeZone timeZone = call.hasArgument("timeZone") ? TimeZone.getTimeZone((String) call.argument("timeZone")) : null;
             properties = extractJSONObject(mapProperties == null ? EMPTY_HASH_MAP : mapProperties);
-            if (date != null) {
-                if (timeZone != null) {
-                    getThinkingAnalyticsSDK(appId).track(eventName, properties, date, timeZone);
-                } else {
-                    getThinkingAnalyticsSDK(appId).track(eventName, properties, date);
-                }
+            if (date != null && timeZone != null) {
+                TDAnalyticsAPI.track(eventName, properties, date, timeZone, appId);
             } else {
-                getThinkingAnalyticsSDK(appId).track(eventName, properties);
+                TDAnalyticsAPI.track(eventName, properties, appId);
             }
         } catch (Exception e) {
             Log.e(TAG, e.toString());
@@ -451,37 +461,42 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
         try {
             String eventName = call.argument("eventName");
             String extraID = call.argument("extraID");
-            Date date = call.hasArgument("timestamp") ? new Date((long) call.argument("timestamp")) : null;
+            Date date = null;
+            Long timestamp =  call.argument("timestamp");
+            if(null != timestamp){
+                date = new Date(timestamp);
+            }
             TimeZone timeZone = call.hasArgument("timeZone") ? TimeZone.getTimeZone((String) call.argument("timeZone")) : null;
 
             Map<String, Object> mapProperties = call.<HashMap<String, Object>>argument("properties");
             JSONObject properties = extractJSONObject(mapProperties == null ? EMPTY_HASH_MAP : mapProperties);
 
             String type = call.argument("eventType");
+            if(type == null) return;
             switch (type) {
                 case "track_first": {
-                    TDFirstEvent eventModel = new TDFirstEvent(eventName, properties);
+                    TDFirstEventModel eventModel = new TDFirstEventModel(eventName,properties);
                     eventModel.setFirstCheckId(extraID);
                     if (date != null) {
                         eventModel.setEventTime(date, timeZone);
                     }
-                    getThinkingAnalyticsSDK(appId).track(eventModel);
+                    TDAnalyticsAPI.track(eventModel,appId);
                     break;
                 }
                 case "track_update": {
-                    TDUpdatableEvent eventModel = new TDUpdatableEvent(eventName, properties, extraID);
+                    TDUpdatableEventModel eventModel = new TDUpdatableEventModel(eventName, properties, extraID);
                     if (date != null) {
                         eventModel.setEventTime(date, timeZone);
                     }
-                    getThinkingAnalyticsSDK(appId).track(eventModel);
+                    TDAnalyticsAPI.track(eventModel,appId);
                     break;
                 }
                 case "track_overwrite": {
-                    TDOverWritableEvent eventModel = new TDOverWritableEvent(eventName, properties, extraID);
+                    TDOverWritableEventModel eventModel = new TDOverWritableEventModel(eventName, properties, extraID);
                     if (date != null) {
                         eventModel.setEventTime(date, timeZone);
                     }
-                    getThinkingAnalyticsSDK(appId).track(eventModel);
+                    TDAnalyticsAPI.track(eventModel,appId);
                     break;
                 }
                 default:
@@ -503,23 +518,21 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
         JSONObject properties;
         try {
             properties = extractJSONObject(mapProperties == null ? EMPTY_HASH_MAP : mapProperties);
-
-            ThinkingAnalyticsSDK instance = getThinkingAnalyticsSDK(appId);
             switch (operations) {
                 case USER_SET:
-                    instance.user_set(properties);
+                    TDAnalyticsAPI.userSet(properties,appId);
                     break;
                 case USER_SET_ONCE:
-                    instance.user_setOnce(properties);
+                    TDAnalyticsAPI.userSetOnce(properties,appId);
                     break;
                 case USER_APPEND:
-                    instance.user_append(properties);
+                    TDAnalyticsAPI.userAppend(properties,appId);
                     break;
                 case USER_UNIQ_APPEND:
-                    instance.user_uniqAppend(properties);
+                    TDAnalyticsAPI.userUniqAppend(properties,appId);
                     break;
                 case USER_ADD:
-                    instance.user_add(properties);
+                    TDAnalyticsAPI.userAdd(properties,appId);
                     break;
             }
         } catch (Exception e) {
@@ -532,7 +545,7 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
 
     private void userUnset(MethodCall call, Result result, String appId) {
         String property = call.argument("property");
-        getThinkingAnalyticsSDK(appId).user_unset(property);
+        TDAnalyticsAPI.userUnset(property,appId);
         result.success(null);
     }
 
@@ -557,18 +570,19 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
 
     private void identify(MethodCall call, Result result, String appId) {
         String distinctId = call.argument("distinctId");
-        getThinkingAnalyticsSDK(appId).identify(distinctId);
+        TDAnalyticsAPI.setDistinctId(distinctId,appId);
         result.success(null);
     }
 
     private void login(MethodCall call, Result result, String appId) {
         String accountId = call.argument("accountId");
-        getThinkingAnalyticsSDK(appId).login(accountId);
+        TDAnalyticsAPI.login(accountId,appId);
         result.success(null);
     }
 
     private void timeEvent(MethodCall call, Result result, String appId) {
         String eventName = call.argument("eventName");
+        TDAnalyticsAPI.timeEvent(eventName,appId);
         getThinkingAnalyticsSDK(appId).timeEvent(eventName);
         result.success(null);
     }
@@ -579,7 +593,7 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
         JSONObject properties;
         try {
             properties = extractJSONObject(mapProperties == null ? EMPTY_HASH_MAP : mapProperties);
-            getThinkingAnalyticsSDK(appId).setSuperProperties(properties);
+            TDAnalyticsAPI.setSuperProperties(properties,appId);
         } catch (Exception e) {
             result.error(e.getClass().getName(), e.toString(), "");
             return;
@@ -589,15 +603,8 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
     }
 
     private void getSuperProperties(Result result, String appId) {
-        JSONObject properties = getThinkingAnalyticsSDK(appId).getSuperProperties();
+        JSONObject properties = TDAnalyticsAPI.getSuperProperties(appId);
         if (properties != null) {
-//            Iterator<String> keys = properties.keys();
-//            Map<String, Object> mapProperties = new HashMap<>();
-//            while (keys.hasNext()) {
-//                String key = keys.next();
-//                Object value = properties.opt(key);
-//                mapProperties.put(key, value);
-//            }
             result.success(jsonToMap(properties));
         } else {
             result.success(null);
@@ -637,7 +644,7 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
     }
 
     private void getPresetProperties(Result result, String appId) {
-        JSONObject properties = getThinkingAnalyticsSDK(appId).getPresetProperties().toEventPresetProperties();
+        JSONObject properties = TDAnalyticsAPI.getPresetProperties(appId).toEventPresetProperties();
         if (properties != null) {
             Iterator<String> keys = properties.keys();
             Map<String, Object> mapProperties = new HashMap<>();
@@ -653,10 +660,7 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
     }
 
     private void createLightInstance(Result result, String appId) {
-        ThinkingAnalyticsSDK lightInstance = getThinkingAnalyticsSDK(appId).createLightInstance();
-        synchronized (mLightInstances) {
-            mLightInstances.put(String.valueOf(lightInstance.hashCode()), lightInstance);
-        }
-        result.success(String.valueOf(lightInstance.hashCode()));
+        String lightAppId = TDAnalyticsAPI.lightInstance(appId);
+        result.success(lightAppId);
     }
 }

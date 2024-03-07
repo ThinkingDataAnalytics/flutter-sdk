@@ -56,7 +56,9 @@ enum TAThirdPartyShareType {
   //hot cloud
   TA_TRACKING,
   //Tradplus
-  TA_TRAD_PLUS
+  TA_TRAD_PLUS,
+  //AppLovinSdk Impression
+  TA_APPLOVIN_IMPRESSION
 }
 
 enum TATrackStatus {
@@ -174,7 +176,7 @@ class ThinkingAnalyticsAPI {
   static const MethodChannel _channel =
       const MethodChannel('thinkingdata.cn/ThinkingAnalytics');
 
-  static const _libVersion = "3.0.0";
+  static const _libVersion = "3.0.1";
 
   // The APP ID bind to the instance.
   final String _appId;
@@ -262,6 +264,18 @@ class ThinkingAnalyticsAPI {
       _channel.invokeMethod('enableAutoTrack', <String, dynamic>{
         'appId': _appId,
         'types': autoTrackTypes.map((e) => e.index).toList(),
+      });
+    }
+  }
+
+  void enableAutoTrackWithProperties(
+      int autoTrackTypes, Map<String, dynamic>? autoTrackEventProperties) {
+    // ignore: unnecessary_null_comparison
+    if (null != autoTrackTypes) {
+      _channel.invokeMethod('enableAutoTrackWithProperties', <String, dynamic>{
+        'appId': _appId,
+        'types': autoTrackTypes,
+        'properties': autoTrackEventProperties
       });
     }
   }
