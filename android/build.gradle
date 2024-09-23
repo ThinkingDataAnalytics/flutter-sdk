@@ -35,7 +35,7 @@ android {
 }
 
 dependencies {
-    implementation 'cn.thinkingdata.android:ThinkingAnalyticsSDK:3.0.0'
+    implementation 'cn.thinkingdata.android:ThinkingAnalyticsSDK:3.0.1'
     implementation 'cn.thinkingdata.android:TAThirdParty:2.0.0'
 }
 

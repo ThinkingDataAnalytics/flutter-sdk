@@ -1,6 +1,7 @@
 import 'dart:collection';
 import 'package:thinking_analytics/thinking_analytics.dart';
 import 'dart:math';
+import 'dart:convert';
 
 ///Running mode. The default mode is NORMAL.
 enum TDMode {
@@ -527,6 +528,159 @@ class TDAnalytics {
     if (null == appId && _sInstances.length > 0) {
       return _sInstances.values.first;
     }
+    if (null == _sInstances[appId]) {
+      return _sInstances.values.first;
+    }
     return _sInstances[appId];
+  }
+
+  static const String TDEventTypeTrack = "track";
+  static const String TDEventTypeTrackFirst = "track_first";
+  static const String TDEventTypeTrackUpdate = "track_update";
+  static const String TDEventTypeTrackOverwrite = "track_overwrite";
+  static const String TDEventTypeUserDel = "user_del";
+  static const String TDEventTypeUserAdd = "user_add";
+  static const String TDEventTypeUserSet = "user_set";
+  static const String TDEventTypeUserSetOnce = "user_setOnce";
+  static const String TDEventTypeUserUnset = "user_unset";
+  static const String TDEventTypeUserAppend = "user_append";
+  static const String TDEventTypeUserUniqAppend = "user_uniq_append";
+
+  static void h5ClickHandler(String eventData) {
+    if (eventData.isNotEmpty) {
+      final Map<String, dynamic> eventMap = json.decode(eventData);
+      final dataArr = eventMap['data'] as List?;
+      if (dataArr == null || dataArr.isEmpty) {
+        return;
+      }
+
+      final dataInfo = dataArr.first as Map<String, dynamic>?;
+      if (dataInfo == null) {
+        return;
+      }
+
+      var type = dataInfo['#type'] as String?;
+      final eventName = dataInfo['#event_name'] as String?;
+      final time = dataInfo['#time'] as String?;
+      var properties = dataInfo['properties'] as Map<String, dynamic>;
+
+      String? extraID;
+      if (type == TDEventTypeTrack) {
+        extraID = dataInfo['#first_check_id'] as String?;
+        if (extraID != null) {
+          type = "track_first";
+        }
+      } else {
+        extraID = dataInfo['#event_id'] as String?;
+      }
+
+      properties.remove('#account_id');
+      properties.remove('#distinct_id');
+      properties.remove('#device_id');
+      properties.remove('#lib');
+      properties.remove('#lib_version');
+      properties.remove('#screen_height');
+      properties.remove('#screen_width');
+      h5track(eventName, extraID, properties, type, time);
+    }
+  }
+
+  static void h5track(String? eventName, String? extraID, Map<String, dynamic>? properties, String? type, String? time) {
+    if (isTrackEvent(type)) {
+      if (type == TDEventTypeTrack) {
+        var dateTime = DateTime.parse(time!);
+        String? timeZone;
+        if (properties!.containsKey('#zone_offset')) {
+          final zoneOffset = properties['#zone_offset'];
+          final diffHours = dateTime.timeZoneOffset.inMinutes / 60 - zoneOffset;
+          final hours = diffHours.toInt();
+          final minutes = ((diffHours - hours) * 60).toInt();
+          final duration = Duration(hours: hours, minutes: minutes);
+          dateTime = dateTime.add(duration);
+          timeZone = formatTimeZone(zoneOffset.toDouble());
+        }
+        track(eventName!, properties: properties, dateTime: dateTime, timeZone: timeZone.toString());
+        return;
+      }
+
+      TrackEventModel eventModel;
+      switch (type) {
+        case TDEventTypeTrackFirst:
+          eventModel = TrackFirstEventModel(eventName!, extraID ?? "", properties!);
+          break;
+        case TDEventTypeTrackUpdate:
+          eventModel = TrackUpdateEventModel(eventName!, extraID!, properties!);
+          break;
+        case TDEventTypeTrackOverwrite:
+          eventModel = TrackOverwriteEventModel(eventName!, extraID!, properties!);
+          break;
+        default:
+          throw ArgumentError("Invalid event type: $type");
+      }
+      trackEventModel(eventModel);
+    } else {
+      switch (type) {
+        case TDEventTypeUserDel:
+          userDelete();
+          break;
+        case TDEventTypeUserAdd:
+          userAdd(convertToNumMap(properties!));
+          break;
+        case TDEventTypeUserSet:
+          userSet(properties!);
+          break;
+        case TDEventTypeUserSetOnce:
+          userSetOnce(properties!);
+          break;
+        case TDEventTypeUserUnset:
+          userUnset(properties!.keys.first);
+          break;
+        case TDEventTypeUserAppend:
+          userAppend(convertToMapOfLists(properties!));
+          break;
+        case TDEventTypeUserUniqAppend:
+          userUniqAppend(convertToMapOfLists(properties!));
+          break;
+      }
+    }
+  }
+
+  static Map<String, num> convertToNumMap(Map<String, dynamic> map) {
+  return Map.fromEntries(map.entries.map((entry) {
+    if (entry.value is int || entry.value is double) {
+      return MapEntry(entry.key, entry.value);
+    } else if (entry.value is String && num.tryParse(entry.value) != null) {
+      return MapEntry(entry.key, num.parse(entry.value));
+    } else {
+      throw Exception('Value for key ${entry.key} is not a number');
+    }
+    }));
+  }
+
+  static Map<String, List<dynamic>> convertToMapOfLists(Map<String, dynamic> map) {
+    return map.map((key, value) {
+      if (value is List) {
+        return MapEntry(key, value);
+      } else {
+        throw Exception('Value for key ${key} is not a List');
+      }
+    });
+  }
+
+  static String formatTimeZone(double hours) {
+    final sign = hours >= 0 ? '+' : '-';
+    final hourAbs = hours.abs();
+    final minutes = (hourAbs - hourAbs.floor()) * 60;
+    final hourPart = '${hourAbs.floor().toString().padLeft(2, '0')}';
+    final minutePart = '${minutes.round().toString().padLeft(2, '0')}';
+
+    return 'GMT${sign}${hourPart}:${minutePart}';
+  }
+
+  static bool isTrackEvent(String? eventType) {
+    return eventType == TDEventTypeTrack ||
+          eventType == TDEventTypeTrackFirst ||
+          eventType == TDEventTypeTrackUpdate ||
+          eventType == TDEventTypeTrackOverwrite;
   }
 }

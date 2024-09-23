@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:thinking_analytics/thinking_analytics.dart';
 import 'package:thinking_analytics/td_analytics.dart';
 import 'package:ta_flutter_plugin_example/multi.dart';
+import 'webview.dart';
 
 void main() => runApp(new MaterialApp(home: MyApp()));
 
@@ -373,6 +374,22 @@ class _MyAppState extends State<MyApp> {
                     ),
                     onPressed: () {
                       trackLightUserSet();
+                    })),
+          ],
+        ),
+      ),
+      Container(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+                child: OutlinedButton(
+                    child: Text(
+                      'WebView打通',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    onPressed: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => MyWebView()));
                     })),
           ],
         ),
