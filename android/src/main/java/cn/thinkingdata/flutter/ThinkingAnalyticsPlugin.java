@@ -31,7 +31,6 @@ import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
-import io.flutter.plugin.common.PluginRegistry.Registrar;
 
 /** ThinkingAnalyticsPlugin */
 public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler {
@@ -47,11 +46,6 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
     @Override
     public void onAttachedToEngine(@NonNull FlutterPluginBinding flutterPluginBinding) {
         onAttachedToEngine(flutterPluginBinding.getApplicationContext(), flutterPluginBinding.getBinaryMessenger());
-    }
-
-    public static void registerWith(Registrar registrar) {
-        final ThinkingAnalyticsPlugin thinkingAnalyticsPlugin = new ThinkingAnalyticsPlugin();
-        thinkingAnalyticsPlugin.onAttachedToEngine(registrar.context(), registrar.messenger());
     }
 
     private void onAttachedToEngine(Context applicationContext, BinaryMessenger messenger) {
