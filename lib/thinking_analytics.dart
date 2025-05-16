@@ -176,7 +176,7 @@ class ThinkingAnalyticsAPI {
   static const MethodChannel _channel =
       const MethodChannel('thinkingdata.cn/ThinkingAnalytics');
 
-  static const _libVersion = "3.1.2";
+  static const _libVersion = "3.1.3";
 
   // The APP ID bind to the instance.
   final String _appId;
