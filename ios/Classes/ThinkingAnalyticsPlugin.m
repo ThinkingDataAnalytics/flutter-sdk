@@ -122,7 +122,10 @@
     } else if ([@"getDistinctId" isEqualToString:call.method]) {
         NSString *distinctId = [TDAnalytics getDistinctIdWithAppId:[arguments objectForKey:@"appId"]];
         result(distinctId);
-    } else if ([@"getDeviceId" isEqualToString:call.method]) {
+    }else if ([@"getAccountId" isEqualToString:call.method]) {
+        NSString *accountId = [TDAnalytics getAccountIdWithAppId:[arguments objectForKey:@"appId"]];
+        result(accountId);
+    }else if ([@"getDeviceId" isEqualToString:call.method]) {
         NSString *deviceId = [TDAnalytics getDeviceId];
         result(deviceId);
     } else if ([@"timeEvent" isEqualToString:call.method]) {
@@ -151,7 +154,14 @@
         NSString *uuid = [TDAnalytics lightInstanceIdWithAppId:[arguments objectForKey:@"appId"]];
         result(uuid);
     } else if ([@"enableLog" isEqualToString:call.method]) {
-        [TDAnalytics enableLog:true];
+        if ([arguments objectForKey:@"enable"]) {
+            NSNumber *enableNumber = [arguments objectForKey:@"enable"];
+            BOOL enable = NO;
+            if (enableNumber) {
+                enable = [enableNumber boolValue];
+            }
+            [TDAnalytics enableLog:enable];
+        }
         result(nil);
     } else if ([@"enableAutoTrack" isEqualToString:call.method]) {
         if ([arguments objectForKey:@"types"]) {

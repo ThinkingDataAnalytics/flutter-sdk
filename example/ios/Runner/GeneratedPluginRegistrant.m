@@ -5,7 +5,7 @@
 // clang-format off
 
 #import "GeneratedPluginRegistrant.h"
-
+#import "TDDemoPlugin.h"
 #if __has_include(<thinking_analytics/ThinkingAnalyticsPlugin.h>)
 #import <thinking_analytics/ThinkingAnalyticsPlugin.h>
 #else
@@ -23,6 +23,7 @@
 + (void)registerWithRegistry:(NSObject<FlutterPluginRegistry>*)registry {
   [ThinkingAnalyticsPlugin registerWithRegistrar:[registry registrarForPlugin:@"ThinkingAnalyticsPlugin"]];
   [FLTWebViewFlutterPlugin registerWithRegistrar:[registry registrarForPlugin:@"FLTWebViewFlutterPlugin"]];
+   [TDDemoPlugin registerWithRegistrar:[registry registrarForPlugin:@"TDDemoPlugin"]];
 }
 
 @end

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ta_flutter_plugin_example/message_handler.dart';
 import 'dart:async';
 
 import 'package:thinking_analytics/thinking_analytics.dart';
@@ -17,7 +18,8 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    initThinkingDataSDK();
+    // initThinkingDataSDK();
+    TDMessageHandler.initWebsocket();
   }
 
   Future<void> initThinkingDataSDK() async {
@@ -389,7 +391,8 @@ class _MyAppState extends State<MyApp> {
                       style: TextStyle(fontSize: 12),
                     ),
                     onPressed: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => MyWebView()));
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: (context) => MyWebView()));
                     })),
           ],
         ),

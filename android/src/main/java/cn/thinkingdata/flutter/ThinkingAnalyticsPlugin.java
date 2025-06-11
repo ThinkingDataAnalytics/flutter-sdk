@@ -59,7 +59,8 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
         String appId = call.argument("appId");
         if (TextUtils.isEmpty(appId)) {
             if (call.method.equals("enableLog")) {
-                TDAnalytics.enableLog(true);
+                boolean enable = Boolean.TRUE.equals(call.argument("enable"));
+                TDAnalytics.enableLog(enable);
                 result.success(null);
                 return;
             }
@@ -101,6 +102,10 @@ public class ThinkingAnalyticsPlugin implements FlutterPlugin, MethodCallHandler
             case "getDistinctId":
                 String distinctId = TDAnalyticsAPI.getDistinctId(appId);
                 result.success(distinctId);
+                break;
+            case "getAccountId":
+                String accountId = TDAnalyticsAPI.getAccountId(appId);
+                result.success(accountId);
                 break;
             case "track":
                 track(call, result, appId);

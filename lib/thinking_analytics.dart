@@ -176,7 +176,7 @@ class ThinkingAnalyticsAPI {
   static const MethodChannel _channel =
       const MethodChannel('thinkingdata.cn/ThinkingAnalytics');
 
-  static const _libVersion = "3.1.3";
+  static const _libVersion = "3.2.0";
 
   // The APP ID bind to the instance.
   final String _appId;
@@ -235,8 +235,8 @@ class ThinkingAnalyticsAPI {
   }
 
   /// Enable detail logs of data tracking.
-  static void enableLog() {
-    _channel.invokeMethod('enableLog');
+  static void enableLog(bool enable) {
+    _channel.invokeMethod('enableLog', <String, dynamic>{'enable': enable});
   }
 
   /// Calibrate SDK time with current Unix timestamp
@@ -541,6 +541,11 @@ class ThinkingAnalyticsAPI {
         'getDistinctId', <String, dynamic>{'appId': this._appId});
   }
 
+  Future<String?> getAccountId() async {
+    return await _channel.invokeMethod<String>(
+        'getAccountId', <String, dynamic>{'appId': this._appId});
+  }
+
   /// Gets the device ID.
   Future<String?> getDeviceId() async {
     return await _channel.invokeMethod<String>(
@@ -595,19 +600,35 @@ class ThinkingAnalyticsAPI {
   }
 
   // Formats all DateTime value in properties.
-  void _searchDate(Map<String, dynamic> properties) {
+  void _searchDate(dynamic data) {
     // ignore: unnecessary_null_comparison
-    if (properties == null) return;
+    if (data == null) return;
+    if (data is Map<String, dynamic>) {
+      data.forEach((key, value) {
+        if (value is DateTime) {
+          data[key] = _formatDateString(value);
+        } else if (value is List) {
+          data[key] = _searchList(value);
+        } else if (value is Map<String, dynamic>) {
+          _searchDate(value);
+        }
+      });
+    } else if (data is List) {
+      _searchList(data);
+    }
+  }
 
-    properties.updateAll((String k, dynamic v) {
-      if (v is DateTime) {
-        return _formatDateString(v);
-      } else if (v is List) {
-        return v.map((e) => e is DateTime ? _formatDateString(e) : e).toList();
-      } else {
-        return v;
+  List<dynamic> _searchList(List<dynamic> list) {
+    for (int i = 0; i < list.length; i++) {
+      if (list[i] is DateTime) {
+        list[i] = _formatDateString(list[i]);
+      } else if (list[i] is List) {
+        list[i] = _searchList(list[i]);
+      } else if (list[i] is Map<String, dynamic>) {
+        _searchDate(list[i]);
       }
-    });
+    }
+    return list;
   }
 
   String _formatDateString(DateTime dateTime) {

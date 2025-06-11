@@ -154,9 +154,7 @@ class TDAnalytics {
   ///
   /// [enableLog] log switch
   static void enableLog(bool enableLog) {
-    if (enableLog) {
-      ThinkingAnalyticsAPI.enableLog();
-    }
+    ThinkingAnalyticsAPI.enableLog(enableLog);
   }
 
   ///time calibration with timestamp
@@ -447,6 +445,11 @@ class TDAnalytics {
     return await instance?.getDistinctId();
   }
 
+  static Future<String?> getAccountId({String? appId}) async {
+    ThinkingAnalyticsAPI? instance = _getInstanceByAppId(appId);
+    return await instance?.getAccountId();
+  }
+
   /// Obtain the device ID.
   ///
   /// [appId] It is used in multi-instance scenarios. If there is only one instance, it is recommended not to pass
@@ -585,7 +588,8 @@ class TDAnalytics {
     }
   }
 
-  static void h5track(String? eventName, String? extraID, Map<String, dynamic>? properties, String? type, String? time) {
+  static void h5track(String? eventName, String? extraID,
+      Map<String, dynamic>? properties, String? type, String? time) {
     if (isTrackEvent(type)) {
       if (type == TDEventTypeTrack) {
         var dateTime = DateTime.parse(time!);
@@ -599,20 +603,25 @@ class TDAnalytics {
           dateTime = dateTime.add(duration);
           timeZone = formatTimeZone(zoneOffset.toDouble());
         }
-        track(eventName!, properties: properties, dateTime: dateTime, timeZone: timeZone.toString());
+        track(eventName!,
+            properties: properties,
+            dateTime: dateTime,
+            timeZone: timeZone.toString());
         return;
       }
 
       TrackEventModel eventModel;
       switch (type) {
         case TDEventTypeTrackFirst:
-          eventModel = TrackFirstEventModel(eventName!, extraID ?? "", properties!);
+          eventModel =
+              TrackFirstEventModel(eventName!, extraID ?? "", properties!);
           break;
         case TDEventTypeTrackUpdate:
           eventModel = TrackUpdateEventModel(eventName!, extraID!, properties!);
           break;
         case TDEventTypeTrackOverwrite:
-          eventModel = TrackOverwriteEventModel(eventName!, extraID!, properties!);
+          eventModel =
+              TrackOverwriteEventModel(eventName!, extraID!, properties!);
           break;
         default:
           throw ArgumentError("Invalid event type: $type");
@@ -646,18 +655,19 @@ class TDAnalytics {
   }
 
   static Map<String, num> convertToNumMap(Map<String, dynamic> map) {
-  return Map.fromEntries(map.entries.map((entry) {
-    if (entry.value is int || entry.value is double) {
-      return MapEntry(entry.key, entry.value);
-    } else if (entry.value is String && num.tryParse(entry.value) != null) {
-      return MapEntry(entry.key, num.parse(entry.value));
-    } else {
-      throw Exception('Value for key ${entry.key} is not a number');
-    }
+    return Map.fromEntries(map.entries.map((entry) {
+      if (entry.value is int || entry.value is double) {
+        return MapEntry(entry.key, entry.value);
+      } else if (entry.value is String && num.tryParse(entry.value) != null) {
+        return MapEntry(entry.key, num.parse(entry.value));
+      } else {
+        throw Exception('Value for key ${entry.key} is not a number');
+      }
     }));
   }
 
-  static Map<String, List<dynamic>> convertToMapOfLists(Map<String, dynamic> map) {
+  static Map<String, List<dynamic>> convertToMapOfLists(
+      Map<String, dynamic> map) {
     return map.map((key, value) {
       if (value is List) {
         return MapEntry(key, value);
@@ -679,8 +689,8 @@ class TDAnalytics {
 
   static bool isTrackEvent(String? eventType) {
     return eventType == TDEventTypeTrack ||
-          eventType == TDEventTypeTrackFirst ||
-          eventType == TDEventTypeTrackUpdate ||
-          eventType == TDEventTypeTrackOverwrite;
+        eventType == TDEventTypeTrackFirst ||
+        eventType == TDEventTypeTrackUpdate ||
+        eventType == TDEventTypeTrackOverwrite;
   }
 }
