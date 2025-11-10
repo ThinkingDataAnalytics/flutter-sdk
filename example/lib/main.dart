@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:ta_flutter_plugin_example/message_handler.dart';
+import 'package:ta_flutter_plugin_example/element_click.dart';
 import 'dart:async';
-
-import 'package:thinking_analytics/thinking_analytics.dart';
 import 'package:thinking_analytics/td_analytics.dart';
+import 'package:thinking_analytics/autotrack/td_page_view.dart';
+import 'package:thinking_analytics/autotrack/td_autotrack_config.dart';
 import 'package:ta_flutter_plugin_example/multi.dart';
 import 'webview.dart';
 
-void main() => runApp(new MaterialApp(home: MyApp()));
+void main() => runApp(new MaterialApp(
+    navigatorObservers: TDNavigatorObserver.wrap([]), home: MyApp()));
 
 class MyApp extends StatefulWidget {
   @override
@@ -18,8 +19,7 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    // initThinkingDataSDK();
-    TDMessageHandler.initWebsocket();
+    initThinkingDataSDK();
   }
 
   Future<void> initThinkingDataSDK() async {
@@ -29,9 +29,35 @@ class _MyAppState extends State<MyApp> {
     config.appId = "40eddce753cd4bef9883a01e168c3df0";
     config.serverUrl = "https://receiver-ta-preview.thinkingdata.cn";
     config.setMode(TDMode.NORMAL);
-    config.enableEncrypt(1,
-        "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAti6FnWGv7Lggzg\\/R8hQa\\n4GEtd2ucfntqo6Xkf1sPwCIfndr2u6KGPhWQ24bFUKgtNLDuKnUAg1C\\/OEEL8uON\\nJBdbX9XpckO67tRPSPrY3ufNIxsCJ9td557XxUsnebkOZ+oC1Duk8\\/ENx1pRvU6S\\n4c+UYd6PH8wxw1agD61oJ0ju3CW0aZNZ2xKcWBcIU9KgYTeUtawrmGU5flod88Cq\\nZc8VKB1+nY0tav023jvxwkM3zgQ6vBWIU9\\/aViGECB98YEzJfZjcOTD6zvqsZc\\/W\\nRnUNhBHFPGEwc8ueMvzZNI+FP0pUFLVRwVoYbj\\/tffKbxGExaRFIcgP73BIW6\\/6n\\nQwIDAQAB");
+    // config.enableEncrypt(1,
+    //     "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAti6FnWGv7Lggzg\\/R8hQa\\n4GEtd2ucfntqo6Xkf1sPwCIfndr2u6KGPhWQ24bFUKgtNLDuKnUAg1C\\/OEEL8uON\\nJBdbX9XpckO67tRPSPrY3ufNIxsCJ9td557XxUsnebkOZ+oC1Duk8\\/ENx1pRvU6S\\n4c+UYd6PH8wxw1agD61oJ0ju3CW0aZNZ2xKcWBcIU9KgYTeUtawrmGU5flod88Cq\\nZc8VKB1+nY0tav023jvxwkM3zgQ6vBWIU9\\/aViGECB98YEzJfZjcOTD6zvqsZc\\/W\\nRnUNhBHFPGEwc8ueMvzZNI+FP0pUFLVRwVoYbj\\/tffKbxGExaRFIcgP73BIW6\\/6n\\nQwIDAQAB");
     TDAnalytics.initWithConfig(config);
+    TDAnalytics.enableAutoTrack(
+        TDAutoTrackEventType.APP_START |
+            TDAutoTrackEventType.APP_END |
+            TDAutoTrackEventType.APP_INSTALL |
+            TDAutoTrackEventType.APP_CRASH |
+            TDAutoTrackEventType.APP_CLICK |
+            TDAutoTrackEventType.APP_VIEW_SCREEN,
+        autoTrackEventProperties: {"test_property": "test_property_value"},
+        autoTrackPageConfig: TDAutoTrackConfig(
+          pageConfigs: [
+            TDAutoTrackPageConfig<MyApp>(
+              screenName: "MyAppScreenName",
+              title: "首页",
+            ),
+            TDAutoTrackPageConfig<MultiInstancePage>(
+              screenName: "MultiScreenName",
+              title: "多实例测试",
+              ignore: false,
+              properties: {"multi_property": "multi_property_value"},
+            ),
+            TDAutoTrackPageConfig<MyWebView>(
+              screenName: "WebViewPageScreen",
+              title: "Web打通",
+            ),
+          ],
+        ));
   }
 
   @override
@@ -394,6 +420,18 @@ class _MyAppState extends State<MyApp> {
                       Navigator.push(context,
                           MaterialPageRoute(builder: (context) => MyWebView()));
                     })),
+            Expanded(child: ElevatedButton(
+                key: TDElementKey("iii", properties: {"key": "kkkk"}),
+                child: Text(
+                  '元素点击测试',
+                  style: TextStyle(fontSize: 12),
+                ),
+                onPressed: () {
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (context) {
+                        return ElementClickView();
+                      }));
+                }))
           ],
         ),
       )
@@ -427,7 +465,9 @@ class _MyAppState extends State<MyApp> {
     TDAnalytics.enableAutoTrack(TDAutoTrackEventType.APP_START |
         TDAutoTrackEventType.APP_END |
         TDAutoTrackEventType.APP_INSTALL |
-        TDAutoTrackEventType.APP_CRASH);
+        TDAutoTrackEventType.APP_CRASH |
+        TDAutoTrackEventType.APP_CLICK |
+        TDAutoTrackEventType.APP_VIEW_SCREEN);
   }
 
   ///自动采集+参数
@@ -624,6 +664,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   String? lightAppId;
+
   void lightInstance() async {
     lightAppId = await TDAnalytics.lightInstance();
   }

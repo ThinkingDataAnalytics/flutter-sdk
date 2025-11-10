@@ -9,6 +9,5 @@ public class MainActivity extends FlutterActivity {
   @Override
   public void configureFlutterEngine(@NonNull FlutterEngine flutterEngine) {
     GeneratedPluginRegistrant.registerWith(flutterEngine);
-    flutterEngine.getPlugins().add(new TDDemoPlugin());
   }
 }

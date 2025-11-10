@@ -1,4 +1,6 @@
 import 'dart:collection';
+import 'package:thinking_analytics/autotrack/td_autotrack.dart';
+import 'package:thinking_analytics/autotrack/td_autotrack_config.dart';
 import 'package:thinking_analytics/thinking_analytics.dart';
 import 'dart:math';
 import 'dart:convert';
@@ -97,6 +99,10 @@ class TDAutoTrackEventType {
   /// Including closing the APP and the App entering the background, and collecting the duration of the startup
   static const int APP_END = 1 << 1;
 
+  static const int APP_CLICK = 1 << 2;
+
+  static const int APP_VIEW_SCREEN = 1 << 3;
+
   /// Record crash information when APP crashes
   static const int APP_CRASH = 1 << 4;
 
@@ -176,9 +182,9 @@ class TDAnalytics {
   /// [appId] the APP ID of your project.
   ///
   /// [serverUrl] your own receiver's url. In case of using TA SaaS, the serverUrl is https://receiver.ta.thinkingdata.cn.
-  static Future<void> init(String appId, String serverUrl) async {
+  static void init(String appId, String serverUrl) async {
     ThinkingAnalyticsAPI instance =
-        await ThinkingAnalyticsAPI.getInstance(appId, serverUrl);
+         ThinkingAnalyticsAPI.getInstance(appId, serverUrl);
     if (!_sInstances.containsKey(appId)) {
       _sInstances[appId] = instance;
     }
@@ -187,7 +193,7 @@ class TDAnalytics {
   ///Initialize the SDK. The track function is not available until this interface is invoked.
   ///
   /// [config] SDK init config
-  static Future<void> initWithConfig(TDConfig config) async {
+  static void initWithConfig(TDConfig config) async {
     ThinkingAnalyticsMode? mode;
     switch (config._mode) {
       case TDMode.NORMAL:
@@ -200,7 +206,7 @@ class TDAnalytics {
         mode = ThinkingAnalyticsMode.DEBUG_ONLY;
         break;
     }
-    ThinkingAnalyticsAPI instance = await ThinkingAnalyticsAPI.getInstance(
+    ThinkingAnalyticsAPI instance = ThinkingAnalyticsAPI.getInstance(
         config.appId, config.serverUrl,
         timeZone: config.timeZone,
         mode: mode,
@@ -265,10 +271,21 @@ class TDAnalytics {
   ///
   /// [appId] It is used in multi-instance scenarios. If there is only one instance, it is recommended not to pass
   static void enableAutoTrack(int autoTrackEventType,
-      {Map<String, dynamic>? autoTrackEventProperties, String? appId}) {
+      {Map<String, dynamic>? autoTrackEventProperties,
+      TDAutoTrackConfig? autoTrackPageConfig,
+      String? appId}) {
     ThinkingAnalyticsAPI? instance = _getInstanceByAppId(appId);
     instance?.enableAutoTrackWithProperties(
         autoTrackEventType, autoTrackEventProperties);
+    if ((autoTrackEventType & TDAutoTrackEventType.APP_CLICK) > 0) {
+      TDAutoTrackManager.instance.enableElementClick(true);
+    }
+    if ((autoTrackEventType & TDAutoTrackEventType.APP_VIEW_SCREEN) > 0) {
+      TDAutoTrackManager.instance.enablePageView(true);
+      if (autoTrackPageConfig != null) {
+        TDAutoTrackManager.instance.config = autoTrackPageConfig;
+      }
+    }
   }
 
   /// Record the event duration, call this method to start the timing, stop the timing when the target event is uploaded, and add the attribute #duration to the event properties, in seconds.
@@ -531,10 +548,22 @@ class TDAnalytics {
     if (null == appId && _sInstances.length > 0) {
       return _sInstances.values.first;
     }
-    if (null == _sInstances[appId]) {
-      return _sInstances.values.first;
-    }
+    // if (null == _sInstances[appId]) {
+    //   return _sInstances.values.first;
+    // }
     return _sInstances[appId];
+  }
+
+  static void setJsBridge(dynamic controller){
+    try{
+      controller.addJavaScriptChannel(
+        "ThinkingData_APP_Flutter_Bridge",
+        onMessageReceived: (dynamic message) {
+          h5ClickHandler(message.message);
+        },
+      );
+    }catch(e){
+    }
   }
 
   static const String TDEventTypeTrack = "track";
@@ -552,6 +581,7 @@ class TDAnalytics {
   static void h5ClickHandler(String eventData) {
     if (eventData.isNotEmpty) {
       final Map<String, dynamic> eventMap = json.decode(eventData);
+      var appId = eventMap["#app_id"];
       final dataArr = eventMap['data'] as List?;
       if (dataArr == null || dataArr.isEmpty) {
         return;
@@ -584,12 +614,12 @@ class TDAnalytics {
       properties.remove('#lib_version');
       properties.remove('#screen_height');
       properties.remove('#screen_width');
-      h5track(eventName, extraID, properties, type, time);
+      h5track(eventName, extraID, properties, type, time,appId);
     }
   }
 
   static void h5track(String? eventName, String? extraID,
-      Map<String, dynamic>? properties, String? type, String? time) {
+      Map<String, dynamic>? properties, String? type, String? time,String? appId) {
     if (isTrackEvent(type)) {
       if (type == TDEventTypeTrack) {
         var dateTime = DateTime.parse(time!);
@@ -606,7 +636,7 @@ class TDAnalytics {
         track(eventName!,
             properties: properties,
             dateTime: dateTime,
-            timeZone: timeZone.toString());
+            timeZone: timeZone.toString(),appId: appId);
         return;
       }
 
@@ -626,29 +656,29 @@ class TDAnalytics {
         default:
           throw ArgumentError("Invalid event type: $type");
       }
-      trackEventModel(eventModel);
+      trackEventModel(eventModel,appId: appId);
     } else {
       switch (type) {
         case TDEventTypeUserDel:
-          userDelete();
+          userDelete(appId: appId);
           break;
         case TDEventTypeUserAdd:
-          userAdd(convertToNumMap(properties!));
+          userAdd(convertToNumMap(properties!),appId: appId);
           break;
         case TDEventTypeUserSet:
-          userSet(properties!);
+          userSet(properties!,appId: appId);
           break;
         case TDEventTypeUserSetOnce:
-          userSetOnce(properties!);
+          userSetOnce(properties!,appId: appId);
           break;
         case TDEventTypeUserUnset:
-          userUnset(properties!.keys.first);
+          userUnset(properties!.keys.first,appId: appId);
           break;
         case TDEventTypeUserAppend:
-          userAppend(convertToMapOfLists(properties!));
+          userAppend(convertToMapOfLists(properties!),appId: appId);
           break;
         case TDEventTypeUserUniqAppend:
-          userUniqAppend(convertToMapOfLists(properties!));
+          userUniqAppend(convertToMapOfLists(properties!),appId: appId);
           break;
       }
     }

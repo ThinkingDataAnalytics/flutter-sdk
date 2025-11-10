@@ -142,7 +142,10 @@ class TDPresetProperties {
     this.screenHeight = presetProperties['#screen_height'];
     this.screenWidth = presetProperties['#screen_width'];
     this.systemLanguage = presetProperties['#system_language'];
-    this.zoneOffset = presetProperties['#zone_offset'];
+    final offset = presetProperties['#zone_offset'];
+    if (offset is num) {
+      this.zoneOffset = offset.toDouble();
+    }
     this.appVersion = presetProperties['#app_version'];
   }
 
@@ -176,7 +179,7 @@ class ThinkingAnalyticsAPI {
   static const MethodChannel _channel =
       const MethodChannel('thinkingdata.cn/ThinkingAnalytics');
 
-  static const _libVersion = "3.2.0";
+  static const _libVersion = "3.3.1";
 
   // The APP ID bind to the instance.
   final String _appId;
@@ -196,12 +199,12 @@ class ThinkingAnalyticsAPI {
   /// NOTE:
   /// 1. DO NOT use [ThinkingAnalyticsMode.DEBUG] or [ThinkingAnalyticsMode.DEBUG_ONLY] in online App.
   /// 2. The DEBUG mode could not be enabled unless you set your device ID in TA server.
-  static Future<ThinkingAnalyticsAPI> getInstance(
+  static ThinkingAnalyticsAPI getInstance(
       String appId, String serverUrl,
       {String? timeZone,
       ThinkingAnalyticsMode? mode,
       bool? enableEncrypt,
-      TASecretKey? secretKey}) async {
+      TASecretKey? secretKey}) {
     Map<String, dynamic> config = <String, dynamic>{
       'appId': appId,
       'serverUrl': serverUrl
@@ -229,7 +232,7 @@ class ThinkingAnalyticsAPI {
       config['enableEncrypt'] = enableEncrypt;
     }
 
-    await _channel.invokeMethod<int>('getInstance', config);
+    _channel.invokeMethod<int>('getInstance', config);
 
     return ThinkingAnalyticsAPI.private(appId);
   }
