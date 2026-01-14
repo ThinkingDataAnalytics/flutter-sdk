@@ -1,0 +1,10 @@
+{
+  "module": {
+    "name": "thinking_analytics",
+    "type": "har",
+    "deviceTypes": [
+      "default",
+      "tablet"
+    ]
+  }
+}
