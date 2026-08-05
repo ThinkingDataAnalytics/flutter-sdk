@@ -1,7 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+
+import 'utils/td_property_validator.dart';
+
+export 'utils/td_property_validator.dart';
 
 /// Thinking Analytics instance mode.
 ///
@@ -179,7 +184,11 @@ class ThinkingAnalyticsAPI {
   static const MethodChannel _channel =
       const MethodChannel('thinkingdata.cn/ThinkingAnalytics');
 
-  static const _libVersion = "3.3.2";
+  static const _libVersion = "3.3.3";
+
+  /// Controls runtime validation for [track] and [trackEventModel] payloads.
+  static TDPropertyValidationMode propertyValidationMode =
+      TDPropertyValidationMode.off;
 
   // The APP ID bind to the instance.
   final String _appId;
@@ -325,6 +334,7 @@ class ThinkingAnalyticsAPI {
     if (properties != null) {
       finalProperties.addAll(properties);
     }
+    _validateTrackPayload(eventName, finalProperties);
     _searchDate(finalProperties);
 
     Map<String, dynamic> params = {
@@ -359,6 +369,7 @@ class ThinkingAnalyticsAPI {
       finalProperties.addAll(eventModel.properties!);
     }
 
+    _validateTrackPayload(eventModel.eventName ?? '', finalProperties);
     _searchDate(finalProperties);
 
     Map<String, dynamic> params = {
@@ -603,6 +614,29 @@ class ThinkingAnalyticsAPI {
   }
 
   // Formats all DateTime value in properties.
+  void _validateTrackPayload(String eventName, Map<String, dynamic> properties) {
+    if (propertyValidationMode == TDPropertyValidationMode.off) {
+      return;
+    }
+
+    final result = TDPropertyValidator.validateTrack(eventName, properties);
+    if (result.isValid) {
+      return;
+    }
+
+    switch (propertyValidationMode) {
+      case TDPropertyValidationMode.warn:
+        if (kDebugMode) {
+          debugPrint('[ThinkingAnalytics] track validation: $result');
+        }
+        break;
+      case TDPropertyValidationMode.strict:
+        throw ArgumentError('[ThinkingAnalytics] track validation: $result');
+      case TDPropertyValidationMode.off:
+        break;
+    }
+  }
+
   void _searchDate(dynamic data) {
     // ignore: unnecessary_null_comparison
     if (data == null) return;

@@ -1,4 +1,4 @@
-#import "ThinkingAnalyticsPlugin.h"
+#import "./include/thinking_analytics/ThinkingAnalyticsPlugin.h"
 //#import <ThinkingSDK/ThinkingAnalyticsSDK.h>
 #import <ThinkingSDK/ThinkingSDK.h>
 @interface ThinkingAnalyticsPlugin ()

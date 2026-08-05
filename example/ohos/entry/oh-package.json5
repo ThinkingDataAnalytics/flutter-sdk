@@ -6,6 +6,7 @@
   "author": "",
   "license": "",
   "dependencies": {
-    "thinking_analytics": "file:../har/thinking_analytics.har"
+    "thinking_analytics": "file:../har/thinking_analytics.har",
+    "@ohos/flutter_ohos": "har/flutter.har"
   }
 }

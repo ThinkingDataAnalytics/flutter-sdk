@@ -4,7 +4,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'thinking_analytics'
-  s.version          = '3.3.2'
+  s.version          = '3.3.3'
   s.summary          = 'Thinking Analytics Flutter plugin'
   s.description      = <<-DESC
 Official Thinking Analytics Flutter plugin. Used to tracking events and user data to Thinking Analytics.
@@ -14,13 +14,13 @@ Official Thinking Analytics Flutter plugin. Used to tracking events and user dat
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'Thinking Analytics' => 'sdk@thinkingdata.cn' }
   s.source           = { :path => '.' }
-  s.source_files = 'Classes/**/*'
-  s.public_header_files = 'Classes/**/*.h'
+  s.source_files = 'thinking_analytics/Sources/thinking_analytics/**/*.{h,m}'
+  s.public_header_files = 'thinking_analytics/Sources/thinking_analytics/include/**/*.h'
   s.dependency 'Flutter'
-  s.dependency 'ThinkingSDK', '3.1.6'
+  # iOS native SDK 3.4.8 (ThinkingDataCore pulled transitively)
+  s.dependency 'ThinkingSDK', '3.4.8'
   s.dependency 'TAThirdParty', '0.3.5'
-  s.platform = :ios, '8.0'
+  s.platform = :ios, '12.0'
 
-  # Flutter.framework does not contain a i386 slice. Only x86_64 simulators are supported.
-  s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES', 'VALID_ARCHS[sdk=iphonesimulator*]' => 'x86_64' }
+  s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES' }
 end

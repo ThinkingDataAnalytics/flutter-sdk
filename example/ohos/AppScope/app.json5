@@ -1,6 +1,6 @@
 {
   "app": {
-    "bundleName": "cn.thinkingdata.thinking_analytics_example",
+    "bundleName": "cn.thinkingai.test",
     "vendor": "example",
     "versionCode": 1000000,
     "versionName": "1.0.0",

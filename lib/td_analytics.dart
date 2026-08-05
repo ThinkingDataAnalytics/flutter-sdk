@@ -156,11 +156,18 @@ class TDThirdPartyType {
 class TDAnalytics {
   static Map<String, ThinkingAnalyticsAPI> _sInstances = LinkedHashMap();
 
-  ///enable debug logging
+  ///Enable debug logging
   ///
   /// [enableLog] log switch
   static void enableLog(bool enableLog) {
     ThinkingAnalyticsAPI.enableLog(enableLog);
+  }
+
+  /// Enable runtime validation for track property payloads.
+  ///
+  /// [mode] defaults to [TDPropertyValidationMode.off] to preserve legacy behavior.
+  static void setPropertyValidationMode(TDPropertyValidationMode mode) {
+    ThinkingAnalyticsAPI.propertyValidationMode = mode;
   }
 
   ///time calibration with timestamp

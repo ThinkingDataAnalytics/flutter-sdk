@@ -4,11 +4,11 @@ version '1.0'
 buildscript {
     repositories {
         google()
-        jcenter()
         mavenCentral()
     }
 
     dependencies {
+        // 保持较低版本，由宿主工程实际 AGP 主导；避免锁死到 8.x 导致老 Flutter(Gradle 7.3) 不可用
         classpath 'com.android.tools.build:gradle:7.3.0'
     }
 }
@@ -16,17 +16,18 @@ buildscript {
 rootProject.allprojects {
     repositories {
         google()
-        jcenter()
+        mavenCentral()
     }
 }
 
 apply plugin: 'com.android.library'
 
 android {
+    // AGP 8+ 需要 namespace；老版本无此属性则跳过
     if (project.android.hasProperty("namespace")) {
         namespace 'cn.thinkingdata.flutter'
     }
-    compileSdkVersion 32
+    compileSdkVersion 34
 
     defaultConfig {
         minSdkVersion 19
@@ -38,16 +39,6 @@ android {
 }
 
 dependencies {
-    implementation 'cn.thinkingdata.android:ThinkingAnalyticsSDK:3.4.2'
+    implementation 'cn.thinkingdata.android:ThinkingAnalyticsSDK:3.4.4'
     implementation 'cn.thinkingdata.android:TAThirdParty:2.0.2'
-}
-
-
-allprojects {
-    gradle.projectsEvaluated {
-        tasks.withType(JavaCompile) {
-//            options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
-            options.compilerArgs << "-Xlint:deprecation"
-        }
-    }
 }
