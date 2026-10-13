@@ -13,10 +13,10 @@ let package = Package(
     ],
     dependencies: [
         .package(name: "FlutterFramework", path: "../FlutterFramework"),
-        // Same remote source as TestIosDemo: ThinkingData iOS SDK 3.4.8
+        // ThinkingData iOS SDK 3.6.0
         .package(
             url: "https://github.com/ThinkingDataAnalytics/ios-sdk",
-            exact: "3.4.8"
+            exact: "3.6.0"
         )
     ],
     targets: [

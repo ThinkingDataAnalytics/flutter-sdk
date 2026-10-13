@@ -184,7 +184,7 @@ class ThinkingAnalyticsAPI {
   static const MethodChannel _channel =
       const MethodChannel('thinkingdata.cn/ThinkingAnalytics');
 
-  static const _libVersion = "3.3.3";
+  static const _libVersion = "3.3.4";
 
   /// Controls runtime validation for [track] and [trackEventModel] payloads.
   static TDPropertyValidationMode propertyValidationMode =
