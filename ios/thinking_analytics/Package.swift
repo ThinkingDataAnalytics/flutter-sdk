@@ -13,10 +13,10 @@ let package = Package(
     ],
     dependencies: [
         .package(name: "FlutterFramework", path: "../FlutterFramework"),
-        // ThinkingData iOS SDK 3.6.0
+        // ThinkingData iOS SDK 3.6.1
         .package(
             url: "https://github.com/ThinkingDataAnalytics/ios-sdk",
-            exact: "3.6.0"
+            exact: "3.6.1"
         )
     ],
     targets: [
